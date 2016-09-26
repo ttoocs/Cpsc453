@@ -1,0 +1,9 @@
+\begin{enumerate}
+
+\item $$\sqrt(0.5)$$ As each diamond is edge between two mid-points of perpendicular sides of the origonal cube of length 1. Giving two sides of length 0.5 of right-angle triangle. Pythagorean theorem gives us $$\sqrt(5)$$ for the hypotenuse, which is the side of the diamond. 
+
+\item $$0.5$$ As the square inside a diamond is half the size as the square outside of the diamond.
+
+\item $$10$$, as $1000/2^{10}$ is the first value less-than $1$. This formula is just an application of the one above.
+
+\end{enumerate}

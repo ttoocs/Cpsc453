@@ -1,0 +1,115 @@
+
+\begin{enumerate}
+
+\item  
+$$x = u \cos(u) *s$$
+and
+$$y = -u \sin(u) *s$$
+over (in raidian): $[0,pi*6]$
+Where $s$ is a scale value.
+
+
+(Strait application of polar-coordinates to Cartesian plane)
+
+\item $50$: As the maximum difference between the curve of the circle and the strait-line will be in the middle of the line. If we use polar-coordinates, we can use the $u$ for a vector that goes to the circle edge giving us a point $P_0$, which intersects a point ($P_1$) equidistant from the two line vertices. We can then use $P_1$ and $P_0$ to calculate the difference.
+As a circle is the same at all points, we can (Without loss of generality) set it so that the vector $0,0$ (which is in the centre of the circle), to $P_0$ is just along the $x$ axis. This then simplifies the difference to $u\cos(\theta/2)-u$. Which, we want to be less than 1.
+
+Rearranging this you get $\theta \leq arccos(500/501)*2$, giving you $\theta \leq  0.12639$. Which as a circle is $2*\pi$, $2*\pi/\theta =$ number of segments. Which is $49.714$ segments, or more. As we cannot have a partial line, it is $50$ lines.
+
+
+\item 
+I used a program to approximate the answer, giving me an overesitmation of 108.
+The program was run in sagemath (A python-based math enviroment)
+There is a loss of percision, due to the iterative delta I'm using, aswell as the assumption that the curve's maximum distance from any plane is directly in-line with the middle of the plane. However, both of these should be minimal.
+\begin{verbatim}
+cale=1000/(11*pi)
+spiral_min = 0
+spiral_max = 6*pi
+spiral_x = u * scale * cos(u)
+spiral_y = -u * scale * sin(u)
+spiral(u) = (spiral_x,spiral_y)
+print(spiral(6*pi))
+Plot=parametric_plot(spiral,(u,spiral_min,spiral_max))
+#
+#show(Plot)
+#
+delta=0.001
+
+def testerr(a,b):
+    p2 = spiral((a+b)/2) #Gets the point halfway through the arc
+    
+    sa = spiral(a) #gets
+    sb = spiral(b) #gets the two intersection points
+    
+    p1=(sa+sb)/2
+        
+    diff=sqrt((p1[0]-p2[0])**2+(p1[1]-p2[1])**2) #Calculates the difference.
+    
+    return(diff <= 1)
+
+mu=0
+cnt=0
+lineplot=[]
+
+while(mu < spiral_max):
+    start = mu
+    end = mu+delta
+    first = true
+    
+    while(first or testerr(start,end)):
+        first = false
+        end = end+delta  
+    mu=end
+    cnt = cnt + 1
+    lineplot.extend([spiral(start),spiral(end)])
+    
+LINE = list_plot(lineplot,plotjoined=True,color='red')
+show(LINE + Plot) #HAS NO RED, Woo.
+print(cnt)piral_min = 0
+spiral_max = 6*pi
+spiral_x = u * scale * cos(u)
+spiral_y = -u * scale * sin(u)
+spiral(u) = (spiral_x,spiral_y)
+print(spiral(6*pi))
+#Plot=parametric_plot(spiral,(u,spiral_min,spiral_max))
+#
+#show(Plot)
+#
+delta=0.01
+
+def testerr(a,b):
+    p2 = spiral((a+b)/2) #Gets the point halfway through the arc
+
+    sa = spiral(a) #gets
+    sb = spiral(b) #gets the two intersection points
+
+    p1=(sb-sa)/2 + sa #Gets the point in the middle of the two.
+
+    diff=sqrt((p1[0]-p2[0])**2+(p1[1]-p2[1])**2) #Calculates the difference.
+
+    return(diff <= 1)
+
+mu=0
+cnt=0
+
+while(mu < spiral_max):
+    start = mu
+    end = mu+delta
+    first = true
+    
+    while(first or testerr(start,end)):
+        first = false
+        end = end+delta  
+    mu=end
+    cnt = cnt + 1
+
+print(cnt)
+
+\end{verbatim}
+
+Mathematically: Supposing you can get a localized vector-space with the line, and the spiral, where the line forms the x-axis, you can use a derivative to find the maximum, and then project that to the localized y-axis, and get it's length. This would allow you to perfectly check, and (hopefully) construct an inequality to give you the minimum per-segment. 
+I was however unable to figure out how to create a localized vector-space, or anyway to take the derivative between the two functions.
+
+
+
+\end{enumerate}

@@ -1,0 +1,29 @@
+
+\begin{enumerate}
+
+\item 
+$$x = u \cos(u) *s$$
+and
+$$y = -u \sin(u) *s$$
+over (raiden's): $[0,pi*6]$
+Where $s$ is a scale value.
+
+
+(Strait application of polar-coordinates to cartiesian plane)
+
+\item $50$: As the maximum difference between the curve of the circle and the strait-line will be in the middle of the line. If we use polar-coordinates, we can use the $u$ for a vector that goes to the circle edge giving us a point $P_0$, which intersects a point ($P_1$) equidistant from the two line vertecies. We can then use $P_1$ and $P_0$ to calculate the difference.
+As a circle is the same at all points, we can (Without loss of generality) set it so that the vector $0,0$ (which is in the centre of the circle), to $P_0$ is just along the $x$ axsis. This then simplifies the difference to $u\cos(\theta/2)-u$. Which, we want to be less than 1.
+
+Rearranging this you get $\theta \leq arccos(500/501)*2$, giving you $\theta \leq  0.12639$. Which as a circle is $2*\pi$, $2*\pi/\theta =$ number of segments. Which is $49.714$ segments, or more. As we cannot have a partial line, it is $50$ lines.
+
+
+\item 
+More actual answer: Building a program (still)
+
+Mathematically: Supposing you can get a localized vector-space with the line, and the spiral, where the line forms the x-axsis, you can use a derivitive to find the maximum, and then project that to the localized y-axsis, and get it's length. This would allow you to perfectly check, and (hopefully) construct an inequality to give you the minimum per-segment. 
+I was however unable to figure out how to create a localized vector-space, or anyway to take the derivitive between the two functions.
+
+Silly aide: Suppose $s = 10000$, then 1. Likewise for $s = 1/10000$. However, these don't actually have the spiral visable by the user, it is much-more a tease of the paramiters of the question.
+
+
+\end{enumerate}
