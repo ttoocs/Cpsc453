@@ -83,7 +83,7 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
 }
 
 
-void Render(GLuint *vertexBuffer, GLuint * colourBuffer, GLfloat * verts[], GLfloat * colours[], int start, int stop){
+void Render(GLuint *vertexBuffer, GLuint * colourBuffer, GLfloat verts[][2], GLfloat colours[][3], int start, int stop){
 	//Configure the buffers to use the arrays.
 	glBufferData(GL_ARRAY_BUFFER, sizeof(*verts), *verts, GL_STATIC_DRAW); //Verts.
 	glBufferData(GL_ARRAY_BUFFER, sizeof(*colours), *colours, GL_STATIC_DRAW); //Colours.
@@ -113,7 +113,7 @@ void test(GLuint *vertexBuffer, GLuint * colourBuffer){
 	GLfloat colours[][3] = {
 		{1,1,1}
 	};
-	Render(vertexBuffer, colourBuffer, &verts, &colours);
+	Render(vertexBuffer, colourBuffer, verts, colours,0,1);
 }
 
 int main(int argc, char *argv[]){
