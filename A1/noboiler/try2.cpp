@@ -42,8 +42,8 @@ GLuint  vertexArray=0;
 
 GLFWwindow *window = 0;
 
-
-void test(){
+void setup_program(){
+	
 	string vertexSource = LoadSource("vertex.glsl");
     string fragmentSource = LoadSource("fragment.glsl");
 
@@ -53,7 +53,10 @@ void test(){
 
     // link shader program
     program = LinkProgram(vertex, fragment);
+}
 
+void test(){
+	setup_program();
 	const GLfloat vertices[][2] = {
         { -0.6, -0.4 },
         {  0.6, -0.4 },
