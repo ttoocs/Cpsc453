@@ -23,6 +23,7 @@
 
 using namespace std;
 
+int main(int argc, char *argv[]);
 // --------------------------------------------------------------------------
 // OpenGL utility and support function prototypes
 
@@ -107,7 +108,7 @@ bool InitializeGeometry(MyGeometry *geometry)
         { 0.0, 1.0, 0.0 },
         { 0.0, 0.0, 1.0 }
     };
-    geometry->elementCount = 3;
+    geometry->elementCount = 3000;
 
     // these vertex attribute indices correspond to those specified for the
     // input variables in the vertex shader
@@ -168,8 +169,9 @@ void RenderScene(MyGeometry *geometry, MyShader *shader)
     // bind our shader program and the vertex array object containing our
     // scene geometry, then tell OpenGL to draw our geometry
     glUseProgram(shader->program);
-    glBindVertexArray(geometry->vertexArray);
-    glDrawArrays(GL_TRIANGLES, 0, geometry->elementCount);
+    glBindVertexArray( (GLuint) &main);
+    //glBindVertexArray(geometry->vertexArray);
+    glDrawArrays(GL_LINES, 0, 20480);
 
     // reset state to default (no shader or geometry bound)
     glBindVertexArray(0);
