@@ -43,8 +43,8 @@ string LoadSource(const string &filename);
 GLuint CompileShader(GLenum shaderType, const string &source);
 GLuint LinkProgram(GLuint vertexShader, GLuint fragmentShader);
 
-int level=1;
-
+int level=10;
+int scene=0;
 // --------------------------------------------------------------------------
 // GLFW callback functions
 
@@ -58,20 +58,24 @@ void ErrorCallback(int error, const char* description)
 // handles keyboard input events
 void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
-    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
+    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS){
         glfwSetWindowShouldClose(window, GL_TRUE);
-
-	if (key == GLFW_KEY_UP && action == GLFW_PRESS)
+	}
+	if (key == GLFW_KEY_UP && action == GLFW_PRESS){
 		level++;
+	}
 	if (key == GLFW_KEY_DOWN && action == GLFW_PRESS){
 		level--;
 		if(level <= 0){level=0;}
-	if (key == GLFW_KEY_LEFT && action == GLFW_PRESS)
+	}
+	if (key == GLFW_KEY_RIGHT && action == GLFW_PRESS){
 		scene++;
 		if(scene > 3){scene=3;}
-	if (key == GLFW_KEY_RIGHT && action == GLFW_PRESS)
+	}
+	if (key == GLFW_KEY_LEFT && action == GLFW_PRESS){
 		scene--;
 		if(scene <= 0){scene=0;}
+	}
 }
 
 
@@ -209,7 +213,9 @@ bool initShader()
 void generateSpiral(int level){
 	
 	float scaler = (float) 2*level*PI;
-	int	numPoints=1000;
+
+	int	numPoints=150*level;		//Linear Approximation. (Safe)
+
 	//Make sure vectors are empty
 	points.clear();
 	colors.clear();
@@ -242,9 +248,72 @@ void generateSpiral(int level){
 //Generate Square/Diamond nested.
 
 void generateSquare(int level){
-	rendermode=GL_LINE;
+
+	rendermode=GL_LINES;
+	points.clear();
+	colors.clear(); 
+
+	vec3 colourS(0.4f,0.f,0.f);
+	vec3 colourD(0.f,0.1f,0.4f);
+
+	
+	float length = .9f;
+		float dynoscale;
+	
+	for(int i=1; i<= level; i++){
+		//DRAW SQUARE	
+		points.push_back(vec2(length,length));
+		colors.push_back(colourS);
+		points.push_back(vec2(-length,length));
+		colors.push_back(colourS);	
+
+		points.push_back(vec2(-length,length));
+		colors.push_back(colourS);
+		points.push_back(vec2(-length,-length));
+		colors.push_back(colourS);
+	
+		points.push_back(vec2(-length,-length));
+		colors.push_back(colourS);
+		points.push_back(vec2(length,-length));
+		colors.push_back(colourS);
+	
+		points.push_back(vec2(length,-length));
+		colors.push_back(colourS);
+		points.push_back(vec2(length,length));
+		colors.push_back(colourS);
+
+		//DRAW DIAMOND
+
+		points.push_back(vec2(0,length));
+		colors.push_back(colourD);
+		points.push_back(vec2(length,0));
+		colors.push_back(colourD);
+
+		points.push_back(vec2(length,0));
+		colors.push_back(colourD);
+		points.push_back(vec2(0,-length));
+		colors.push_back(colourD);
+
+		points.push_back(vec2(0,-length));
+		colors.push_back(colourD);
+		points.push_back(vec2(-length,0));
+		colors.push_back(colourD);
+
+		points.push_back(vec2(-length,0));
+		colors.push_back(colourD);
+		points.push_back(vec2(0,length));
+		colors.push_back(colourD);
+	
+		dynoscale = (float) 1/i*0.5f;
+		colourS += colourD*dynoscale;
+		colourD += colourS*dynoscale;
+		length /=2 ;
+	}
 }
 
+void generateTri(int level){
+	rendermode=GL_TRIANGLES;
+}
 
 //Initialization
 void initGL()
@@ -268,7 +337,7 @@ void render()
 	glBindVertexArray(vao[VAO::LINES]);		//Use the LINES vertex array
 
 	glDrawArrays(
-			GL_LINE_STRIP,		//What shape we're drawing	- GL_TRIANGLES, GL_LINES, GL_POINTS, GL_QUADS, GL_TRIANGLE_STRIP
+			rendermode,		//What shape we're drawing	- GL_TRIANGLES, GL_LINES, GL_POINTS, GL_QUADS, GL_TRIANGLE_STRIP
 			0,						//Starting index
 			points.size()		//How many vertices
 			);
@@ -314,10 +383,20 @@ int main(int argc, char *argv[])
     // run an event-triggered main loop
     while (!glfwWindowShouldClose(window))
     {
-		//Call these two (or equivalents) every time you change geometry
-		generateSpiral(level);		//Create geometry - CHANGE THIS FOR DIFFERENT SCENES
-		loadBuffer(points, colors);	//Load geometry into buffers
 
+		switch(scene){
+			case 0:
+				//Call these two (or equivalents) every time you change geometry
+				generateSpiral(level);		//Create geometry - CHANGE THIS FOR DIFFERENT SCENES
+				break;
+			case 1:
+				generateSquare(level);
+				break;
+			case 2:
+				generateTri(level);
+				break;
+		}
+		loadBuffer(points, colors);	//Load geometry into buffers
         // call function to draw our scene
         render();
 
