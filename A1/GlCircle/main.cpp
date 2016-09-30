@@ -43,6 +43,8 @@ string LoadSource(const string &filename);
 GLuint CompileShader(GLenum shaderType, const string &source);
 GLuint LinkProgram(GLuint vertexShader, GLuint fragmentShader);
 
+int level=1;
+
 // --------------------------------------------------------------------------
 // GLFW callback functions
 
@@ -58,6 +60,18 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
 {
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
         glfwSetWindowShouldClose(window, GL_TRUE);
+
+	if (key == GLFW_KEY_UP && action == GLFW_PRESS)
+		level++;
+	if (key == GLFW_KEY_DOWN && action == GLFW_PRESS){
+		level--;
+		if(level <= 0){level=0;}
+	if (key == GLFW_KEY_LEFT && action == GLFW_PRESS)
+		scene++;
+		if(scene > 3){scene=3;}
+	if (key == GLFW_KEY_RIGHT && action == GLFW_PRESS)
+		scene--;
+		if(scene <= 0){scene=0;}
 }
 
 
@@ -296,12 +310,12 @@ int main(int argc, char *argv[])
     QueryGLVersion();
 
 	initGL();
-
+	
     // run an event-triggered main loop
     while (!glfwWindowShouldClose(window))
     {
 		//Call these two (or equivalents) every time you change geometry
-		generateSpiral(3);		//Create geometry - CHANGE THIS FOR DIFFERENT SCENES
+		generateSpiral(level);		//Create geometry - CHANGE THIS FOR DIFFERENT SCENES
 		loadBuffer(points, colors);	//Load geometry into buffers
 
         // call function to draw our scene
