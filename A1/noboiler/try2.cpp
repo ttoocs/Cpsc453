@@ -55,7 +55,19 @@ void setup_program(){
     program = LinkProgram(vertex, fragment);
 }
 
-void Render(const GLfloat vertices[][2], int v_size, const GLfloat colours[][3], int c_size, int start, int stop){
+struct render_object {
+
+	GLfloat	vertices[][2];
+	GLfloat colours[][3];
+};
+
+void Render(render_object Obj, int start, int stop){
+	
+	/*
+	I have tried to move these out of this function, however anytime I try to, it seems to immediatly stop working.. (Besides the setup_program).
+	There _should_ be a way to initalize the buffers, and add data/modify data to them as needed, but alas, if I attempt such things, I segfault.
+	This is really a brute-force approach, as to get it done.
+	*/
 
 	const GLuint VERTEX_INDEX = 0;
     const GLuint COLOUR_INDEX = 1;	//Black magic?
@@ -63,12 +75,12 @@ void Render(const GLfloat vertices[][2], int v_size, const GLfloat colours[][3],
 	// create an array buffer object for storing our vertices
     glGenBuffers(1, &vertexBuffer);
     glBindBuffer(GL_ARRAY_BUFFER, vertexBuffer);
-    glBufferData(GL_ARRAY_BUFFER, v_size, vertices, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(Obj::vertices), Obj::vertices, GL_STATIC_DRAW);
 
     // create another one for storing our colours
     glGenBuffers(1, &colourBuffer);
     glBindBuffer(GL_ARRAY_BUFFER, colourBuffer);
-    glBufferData(GL_ARRAY_BUFFER, c_size, colours, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(Obj::colours), Obj::colours, GL_STATIC_DRAW);
 
     // create a vertex array object encapsulating all our vertex attributes
     glGenVertexArrays(1, &vertexArray);
@@ -126,7 +138,6 @@ int main(int argc, char *argv[]){
 
 	if (!window) {
 		cout << "Failed to create window, giving up." << endl;
-//		end_prog(-2);	
 	}
 	
 	// set keyboard callback function and make our context current (active)
@@ -145,7 +156,7 @@ int main(int argc, char *argv[]){
         { 0.0, 0.0, 1.0 }
     };
 
-	Render(vertices,sizeof(vertices),colours,sizeof(colours),0,4);
+	Render(vertices,colours,0,4);
 	glfwSwapBuffers(window);
 	
 	sleep(32);	
