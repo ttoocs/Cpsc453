@@ -25,22 +25,27 @@ bool CheckGLErrors();
 
 //Declaring functions defined later.
 string LoadSource(const string &filename);
+GLuint CompileShader(GLenum shaderType, const string &source);
+GLuint LinkProgram(GLuint vertexShader, GLuint fragmentShader);
+
+
+
+//Global variables
+
+GLuint vertex=0;
+GLuint fragment=0;
+GLuint program=0;
+
+GLuint  vertexBuffer=0;
+GLuint  colourBuffer=0;
+GLuint  vertexArray=0;
+
+GLFWwindow *window = 0;
 
 
 void test(){
-	GLuint vertex=0;
-	GLuint fragment=0;
-	GLuint program=0;
-
-    GLuint  vertexBuffer=0;
-    GLuint  colourBuffer=0;
-    GLuint  vertexArray=0;
-    GLsizei elementCount=0;
-
-	
 	string vertexSource = LoadSource("vertex.glsl");
     string fragmentSource = LoadSource("fragment.glsl");
-    if (vertexSource.empty() || fragmentSource.empty()) return false;
 
     // compile shader source into shader objects
     vertex = CompileShader(GL_VERTEX_SHADER, vertexSource);
@@ -74,7 +79,7 @@ void test(){
     glBufferData(GL_ARRAY_BUFFER, sizeof(colours), colours, GL_STATIC_DRAW);
 
     // create a vertex array object encapsulating all our vertex attributes
-    glGenVertexArrays(1, vertexArray);
+    glGenVertexArrays(1, &vertexArray);
     glBindVertexArray(vertexArray);
 
     // associate the position array with the vertex array object
@@ -121,7 +126,6 @@ int main(int argc, char *argv[]){
 		exit(-1);
 	}
 	
-	GLFWwindow *window = 0;
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);		//Setup the window, with things.
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
@@ -130,7 +134,7 @@ int main(int argc, char *argv[]){
 
 	if (!window) {
 		cout << "Failed to create window, giving up." << endl;
-		end_prog(-2);	
+//		end_prog(-2);	
 	}
 	
 	// set keyboard callback function and make our context current (active)
@@ -165,4 +169,60 @@ string LoadSource(const string &filename)
     
     return source;
 }
+GLuint CompileShader(GLenum shaderType, const string &source)
+{
+    // allocate shader object name
+    GLuint shaderObject = glCreateShader(shaderType);
+    
+    // try compiling the source as a shader of the given type
+    const GLchar *source_ptr = source.c_str();
+    glShaderSource(shaderObject, 1, &source_ptr, 0);
+    glCompileShader(shaderObject);
+    
+    // retrieve compile status
+    GLint status;
+    glGetShaderiv(shaderObject, GL_COMPILE_STATUS, &status);
+    if (status == GL_FALSE)
+    {
+        GLint length;
+        glGetShaderiv(shaderObject, GL_INFO_LOG_LENGTH, &length);
+        string info(length, ' ');
+        glGetShaderInfoLog(shaderObject, info.length(), &length, &info[0]);
+        cout << "ERROR compiling shader:" << endl << endl;
+        cout << source << endl;
+        cout << info << endl;
+    }
+
+    return shaderObject;
+}   
+    
+// creates and returns a program object linked from vertex and fragment shaders
+GLuint LinkProgram(GLuint vertexShader, GLuint fragmentShader)
+{
+    // allocate program object name
+    GLuint programObject = glCreateProgram();
+         
+    // attach provided shader objects to this program
+    if (vertexShader)   glAttachShader(programObject, vertexShader);
+    if (fragmentShader) glAttachShader(programObject, fragmentShader);
+
+    // try linking the program with given attachments
+    glLinkProgram(programObject);
+    
+    // retrieve link status
+    GLint status;
+    glGetProgramiv(programObject, GL_LINK_STATUS, &status);
+    if (status == GL_FALSE)
+    {   
+        GLint length;
+        glGetProgramiv(programObject, GL_INFO_LOG_LENGTH, &length);
+        string info(length, ' ');
+        glGetProgramInfoLog(programObject, info.length(), &length, &info[0]);
+        cout << "ERROR linking shader program:" << endl;
+        cout << info << endl;
+    }       
+        
+    return programObject;
+}       
+
 
