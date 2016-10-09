@@ -17,14 +17,14 @@ uniform sampler2DRect tex;
 
 void main(void)
 {
-    int res = 10;
+    int res = 1;
     vec2 newCoords;
     newCoords.x = res * (int(textureCoords.x)/res);
     newCoords.y = res * (int(textureCoords.y)/res);
 
     // write colour output without modification
     vec4 colour = texture(tex, newCoords);
-    colour = 1 - colour;
+    //colour = 1 - colour;
 
     FragmentColour = colour;
 }

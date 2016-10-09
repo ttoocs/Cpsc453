@@ -1,3 +1,7 @@
+// Scott Saunders, 10163541
+// Oct 9, 2016
+
+
 // ==========================================================================
 // Barebones OpenGL Core Profile Boilerplate
 //    using the GLFW windowing system (http://www.glfw.org)
@@ -36,6 +40,7 @@ using namespace std;
 void QueryGLVersion();
 bool CheckGLErrors();
 
+float c = 0;
 GLfloat trans[2][2] = {{1,0},{0,1}}; 	//2D transformation Matrix
 GLfloat offset[2] = {0,0};				//2D offset vector
 
@@ -166,23 +171,26 @@ bool InitializeGeometry(MyGeometry *geometry)
 {
 	// three vertex positions and assocated colours of a triangle
 	const GLfloat vertices[][2] = {
-		{ -.6f, -.4f },
-		{ .0f,  .6f },
-		{ .6f, -.4f }
+		{ -1.f, +1.f },
+		{ 1.f,  1.f },
+		{ -1.f, -1.f },
+		{ 1.f,	-1.f}
 	};
 
 	const GLfloat textureCoords[][2] = {
 		{0.f, 0.f},
-		{256.f, 512.f},
-		{512.f, 0.f}
+		{0.f, 512.f},
+		{512.f, 0.f},
+		{512.f,512.f}
 	};
 
 	const GLfloat colours[][3] = {
 		{ 1.0f, 0.0f, 0.0f },
 		{ 0.0f, 1.0f, 0.0f },
-		{ 0.0f, 0.0f, 1.0f }
+		{ 0.0f, 0.0f, 1.0f },
+		{ 1.0f, 1.0f, 1.0f }
 	};
-	geometry->elementCount = 3;
+	geometry->elementCount = 4;
 
 	// these vertex attribute indices correspond to those specified for the
 	// input variables in the vertex shader
@@ -257,16 +265,18 @@ void RenderScene(MyGeometry *geometry, MyTexture* texture, MyShader *shader)
 	glBindVertexArray(geometry->vertexArray);
 	glBindTexture(texture->target, texture->textureID);
 
+	c+=0.01;
+//	GLfloat trans[2][2] = {{cos(c),sin(c)},{-sin(c),cos(c)}}; 	//2D transformation Matrix
+//	GLfloat offset[2] = {0,1};				//2D offset vector
+
 	GLint uniTransform = glGetUniformLocation(shader->program, "transform");
 	glUniformMatrix2fv(uniTransform, 1, GL_FALSE, *trans);
 	CheckGLErrors();
 
-
 	GLint uniOffset = glGetUniformLocation(shader->program, "offset");
 	glUniform2fv(uniOffset, 1, offset);
 
-
-	glDrawArrays(GL_TRIANGLES, 0, geometry->elementCount);
+	glDrawArrays(GL_TRIANGLE_STRIP, 0, geometry->elementCount);
 
 	// reset state to default (no shader or geometry bound)
 	glBindTexture(texture->target, 0);
@@ -292,6 +302,11 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
 {
 	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
 		glfwSetWindowShouldClose(window, GL_TRUE);
+	if (key == GLFW_KEY_A)
+		trans[0][0] = trans[0][0]+0.1f ;
+		trans[0][1] = trans[0][1]+0.1f ;
+		trans[1][0] = trans[1][0]+0.1f ;
+		trans[1][1] = trans[1][1]+0.1f ;
 }
 
 // ==========================================================================
@@ -312,7 +327,7 @@ int main(int argc, char *argv[])
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
 	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-	window = glfwCreateWindow(512, 512, "CPSC 453 OpenGL Boilerplate", 0, 0);
+	window = glfwCreateWindow(512, 512, "CPSC 453 Assignment 2", 0, 0);
 	if (!window) {
 		cout << "Program failed to create GLFW window, TERMINATING" << endl;
 		glfwTerminate();
