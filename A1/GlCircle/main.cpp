@@ -42,8 +42,9 @@ void QueryGLVersion();
 string LoadSource(const string &filename);
 GLuint CompileShader(GLenum shaderType, const string &source);
 GLuint LinkProgram(GLuint vertexShader, GLuint fragmentShader);
+void regen(int level);
 
-int level=10;
+int level=1;
 int scene=0;
 // --------------------------------------------------------------------------
 // GLFW callback functions
@@ -54,8 +55,7 @@ void ErrorCallback(int error, const char* description)
     cout << "GLFW ERROR " << error << ":" << endl;
     cout << description << endl;
 }
-
-// handles keyboard input events
+// handles keyboard input events, also triggering regeneration of the images.
 void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS){
@@ -63,19 +63,24 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
 	}
 	if (key == GLFW_KEY_UP && action == GLFW_PRESS){
 		level++;
+		regen(level);
 	}
 	if (key == GLFW_KEY_DOWN && action == GLFW_PRESS){
 		level--;
-		if(level <= 0){level=0;}
+		if(level <= 0){level=1;}
+		regen(level);
 	}
 	if (key == GLFW_KEY_RIGHT && action == GLFW_PRESS){
 		scene++;
-		if(scene > 3){scene=3;}
+		if(scene >= 3){scene=2;}
+		regen(level);
 	}
 	if (key == GLFW_KEY_LEFT && action == GLFW_PRESS){
 		scene--;
 		if(scene <= 0){scene=0;}
+		regen(level);
 	}
+	
 }
 
 
@@ -222,17 +227,12 @@ void generateSpiral(int level){
 
 	rendermode=GL_LINE_STRIP;
 
-//	const float MAX_ROTATION = 2*3.14159f;
-
 	float u = 0.f;
 	float ustep = 1.f/((float)numPoints - 1);		//Size of steps so u = 1 at end of loop
 
 	vec3 startColor(1.f, 0.f, 0.f);		//Initial color
 	vec3 endColor(0.f, 0.f, 1.f);			//Final color
 	
-//	points.push_back(vec2(0, 0));		//Uncomment for spiral		
-//	colors.push_back(startColor);
-	//Fill vectors with points/colors
 	for(int i=0; i<numPoints; i++)
 	{
 		u+=ustep;						//Increment u
@@ -261,7 +261,7 @@ void generateSquare(int level){
 		float dynoscale;
 	
 	for(int i=1; i<= level; i++){
-		//DRAW SQUARE	
+		//DRAW SQUARE (Done in a simple brute-push)	
 		points.push_back(vec2(length,length));
 		colors.push_back(colourS);
 		points.push_back(vec2(-length,length));
@@ -282,7 +282,7 @@ void generateSquare(int level){
 		points.push_back(vec2(length,length));
 		colors.push_back(colourS);
 
-		//DRAW DIAMOND
+		//DRAW DIAMOND (Done in a simple brute-push)
 
 		points.push_back(vec2(0,length));
 		colors.push_back(colourD);
@@ -305,15 +305,80 @@ void generateSquare(int level){
 		colors.push_back(colourD);
 	
 		dynoscale = (float) 1/i*0.5f;
-		colourS += colourD*dynoscale;
+		colourS += colourD*dynoscale; //Colour effects for each interation.
 		colourD += colourS*dynoscale;
-		length /=2 ;
+
+		length /=2 ;					//Shrink the size.
 	}
+}
+
+void genRecurTri(vec2 pos[], vec3 colour, int reclevel){
+	//This could be adapted to use the glDrawElements, to allow for faster&deeper levels, however that is for a future project.
+	if(reclevel-- <= 1){
+		points.push_back(pos[0]);
+		points.push_back(pos[1]);
+		points.push_back(pos[2]);		//Push that data if this is a last recursion
+		colors.push_back(colour);
+		colors.push_back(colour);
+		colors.push_back(colour);
+		return;
+	} //Implicit else via return
+	
+	vec2 npos[3];
+	npos[0]=((pos[0]-pos[1])*0.5f +pos[1]);
+	npos[1]=((pos[1]-pos[2])*0.5f +pos[2]); //Generate new verticies
+	npos[2]=((pos[2]-pos[0])*0.5f +pos[0]);
+	
+	vec2 top[] = {npos[1],pos[1],npos[0]};
+	genRecurTri(top, colour*.8f,reclevel);
+	
+	vec2 botl[] = {pos[0],npos[0],npos[2]};
+	genRecurTri(botl, colour+vec3(0,0.2f,0),reclevel);		//Mixes colours, verticies, ect, so that the recursed versions are in the right place.
+
+	vec2 botr[] = {npos[2],npos[1],pos[2]};
+	genRecurTri(botr, colour+vec3(0.2f,0,0.f),reclevel);
+	
 }
 
 void generateTri(int level){
 	rendermode=GL_TRIANGLES;
+	points.clear();
+	colors.clear(); 
+	//
+	// Inital triangle:
+	// 						(0,0.43301f)
+	// (-0.5f, -0.43301f)					(0.5f,0.43301f)
+	//
+	
+	float scale = 1.8f;
+	vec2 pos[] ={
+		vec2(-0.5f, -0.43301f)*scale,
+		vec2(0,0.43301f)*scale,
+		vec2(0.5f,-0.43301f)*scale,
+	};
+
+	genRecurTri(pos,				//Initalizes the recursion
+		vec3(0.f,0.f,1.f),
+		level);
+
 }
+
+void regen(int level){
+		switch(scene){
+			case 0:
+				//Call these two (or equivalents) every time you change geometry
+				generateSpiral(level);		//Create geometry - CHANGE THIS FOR DIFFERENT SCENES
+				break;
+			case 1:
+				generateSquare(level);
+				break;
+			case 2:
+				generateTri(level);
+				break;
+		}
+		loadBuffer(points, colors);	//Load geometry into buffers
+}
+
 
 //Initialization
 void initGL()
@@ -379,24 +444,11 @@ int main(int argc, char *argv[])
     QueryGLVersion();
 
 	initGL();
-	
+	regen(level);	
     // run an event-triggered main loop
     while (!glfwWindowShouldClose(window))
     {
 
-		switch(scene){
-			case 0:
-				//Call these two (or equivalents) every time you change geometry
-				generateSpiral(level);		//Create geometry - CHANGE THIS FOR DIFFERENT SCENES
-				break;
-			case 1:
-				generateSquare(level);
-				break;
-			case 2:
-				generateTri(level);
-				break;
-		}
-		loadBuffer(points, colors);	//Load geometry into buffers
         // call function to draw our scene
         render();
 
@@ -408,9 +460,9 @@ int main(int argc, char *argv[])
 	}
 
 	// clean up allocated resources before exit
-   deleteIDs();
+  	deleteIDs();
 	glfwDestroyWindow(window);
-   glfwTerminate();
+    glfwTerminate();
 
    return 0;
 }
