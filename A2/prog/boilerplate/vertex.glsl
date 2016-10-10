@@ -23,7 +23,7 @@ uniform float zoom;
 void main()
 {
     // assign vertex position without modification
-    gl_Position = vec4(zoom*(transform * (VertexPosition+offset)), 0.0, 1.0);
+    gl_Position = vec4(zoom*((transform * (VertexPosition))+offset), 0.0, 1.0);
 
     // assign output colour to be interpolated
     Colour = VertexColour;

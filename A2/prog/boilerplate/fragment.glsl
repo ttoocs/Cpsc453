@@ -17,7 +17,7 @@ uniform sampler2DRect tex;
 
 void main(void)
 {
-    int res = 1;
+    float res = 0.001f;
     vec2 newCoords;
     newCoords.x = res * (int(textureCoords.x)/res);
     newCoords.y = res * (int(textureCoords.y)/res);

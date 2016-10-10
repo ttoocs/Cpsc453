@@ -34,6 +34,9 @@
 
 
 #define PI 3.1415926535f
+#define WINDOW_X 512
+#define WINDOW_Y 512
+
 
 using namespace std;
 // --------------------------------------------------------------------------
@@ -48,16 +51,40 @@ GLfloat trans[2][2] = {{1,0},{0,1}}; 	//2D transformation Matrix
 GLfloat offset[2] = {0,0};				//2D offset vector
 GLfloat theta = 0;
 
+GLfloat mouseX;
+GLfloat mouseY;
+GLfloat ImouseX;	//Various mouse defines.
+GLfloat ImouseY;
+GLfloat DmouseX;
+GLfloat DmouseY;
+bool Mdown = false;
+//GLfloat Moffset[2] ={0,0};
+
 string LoadSource(const string &filename);
 GLuint CompileShader(GLenum shaderType, const string &source);
 GLuint LinkProgram(GLuint vertexShader, GLuint fragmentShader);
 
+void mouseoffset(){	
+	DmouseX = ImouseX-mouseX;
+	DmouseY = ImouseY-mouseY;
+	
+	offset[0] -= DmouseX;
+	offset[1] += DmouseY;
 
-void recalc_trans(){
+}
+
+void recalc_trans(GLfloat newtheta){
+	theta += newtheta;
 	trans[0][0]=cos(theta);
 	trans[0][1]=-sin(theta);
 	trans[1][0]=sin(theta);
 	trans[1][1]=cos(theta);
+
+	GLfloat newoff[2] = {
+		offset[0]*cos(newtheta)+offset[1]*sin(newtheta), 
+		-offset[0]*sin(newtheta)+offset[1]*cos(newtheta)};
+	offset[0]=newoff[0];
+	offset[1]=newoff[1];
 }
 
 //Structures for various data-types.
@@ -156,7 +183,6 @@ bool InitializeTexture(MyGeometry *geometry, MyTexture* texture, const char* fil
 	
 
 		GLfloat ratio = ( ((GLfloat) texture->width) / ((GLfloat)texture->height));
-			printf("WHY: %f\n",ratio);	
 		if(ratio >= 1){
 			const GLfloat vertices[][2] = {
 				{-1.f,	-1/ratio},
@@ -166,7 +192,6 @@ bool InitializeTexture(MyGeometry *geometry, MyTexture* texture, const char* fil
 			};
 			glBindBuffer(GL_ARRAY_BUFFER, geometry->vertexBuffer);
 			glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-			printf("HIO\n");
 		}else{
 			const GLfloat vertices[][2] = {
 				{-ratio,	-1.f},
@@ -176,7 +201,6 @@ bool InitializeTexture(MyGeometry *geometry, MyTexture* texture, const char* fil
 			};
 			glBindBuffer(GL_ARRAY_BUFFER, geometry->vertexBuffer);
 			glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-			printf("HIO2\n");
 		}
 
 		const GLfloat textureCoords[][2] = {
@@ -346,6 +370,36 @@ void ErrorCallback(int error, const char* description)
 }
 
 // handles keyboard input events
+void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
+{
+	
+    if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
+		Mdown=true;
+//		Moffset[0] = offset[0];
+//		Moffset[1] = offset[1];
+		ImouseX = mouseX;
+		ImouseY = mouseY;
+	}
+    if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE) {
+		Mdown=false;
+		mouseoffset();
+	}
+}
+
+static void cursor_position_callback(GLFWwindow* window, double xpos, double ypos)
+{
+	mouseX= (xpos/WINDOW_X*2 -1.f)/zoom;
+	mouseY= (ypos/WINDOW_Y*2 -1.f)/zoom;
+}
+void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
+{
+	GLfloat scaler=yoffset/10.f;
+	zoom+=scaler;
+	if(zoom <= 0){zoom= 0.1f;}
+	
+	offset[0]-=(mouseX*scaler);
+	offset[1]+=(mouseY*scaler);
+}
 void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
 	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
@@ -370,12 +424,10 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
 		offset[0] = offset[0]-(0.1f/(zoom));
 	}
 	if (key == GLFW_KEY_Z){
-		theta += 0.1f/PI;
-		recalc_trans();
+		recalc_trans(0.1f/PI);
 	}
 	if (key == GLFW_KEY_X){
-		theta -= 0.1f/PI;
-		recalc_trans();
+		recalc_trans(-0.1f/PI);
 	}	
 }
 
@@ -400,7 +452,7 @@ int main(int argc, char *argv[])
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
 	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-	window = glfwCreateWindow(512, 512, "CPSC 453 Assignment 2", 0, 0);
+	window = glfwCreateWindow(WINDOW_X, WINDOW_Y, "CPSC 453 Assignment 2", 0, 0);
 	if (!window) {
 		cout << "Program failed to create GLFW window, TERMINATING" << endl;
 		glfwTerminate();
@@ -408,7 +460,10 @@ int main(int argc, char *argv[])
 	}
 
 	// set keyboard callback function and make our context current (active)
+	glfwSetMouseButtonCallback(window,  mouse_button_callback);
+	glfwSetCursorPosCallback(window, cursor_position_callback);
 	glfwSetKeyCallback(window, KeyCallback);
+	glfwSetScrollCallback(window, scroll_callback);
 	glfwMakeContextCurrent(window);
 
 	// query and print out information about our OpenGL environment
