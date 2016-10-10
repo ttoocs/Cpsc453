@@ -24,6 +24,20 @@ void main(void)
 
     // write colour output without modification
     vec4 colour = texture(tex, newCoords);
+	
+/* //Black and white:
+	float lum;
+	lum = texture(tex, newCoords)[0]*0.213f; //RED
+	lum += texture(tex, newCoords)[1]*0.715f; //GREEN
+	lum += texture(tex, newCoords)[2]*0.072f; //BLUE
+	vec4 colour;
+	colour[0] = lum;
+	colour[1] = lum;
+	colour[2] = lum;
+	colour[3] = texture(tex, newCoords)[3];
+
+
+		//*/
     //colour = 1 - colour;
 
     FragmentColour = colour;

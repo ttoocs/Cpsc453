@@ -33,6 +33,8 @@
 #include <glm/glm.hpp>
 
 
+#define PI 3.1415926535f
+
 using namespace std;
 // --------------------------------------------------------------------------
 // OpenGL utility and support function prototypes
@@ -41,15 +43,37 @@ void QueryGLVersion();
 bool CheckGLErrors();
 
 float c = 0;
+GLfloat zoom = 1.f;
 GLfloat trans[2][2] = {{1,0},{0,1}}; 	//2D transformation Matrix
 GLfloat offset[2] = {0,0};				//2D offset vector
+GLfloat theta = 0;
 
 string LoadSource(const string &filename);
 GLuint CompileShader(GLenum shaderType, const string &source);
 GLuint LinkProgram(GLuint vertexShader, GLuint fragmentShader);
 
-// --------------------------------------------------------------------------
-// Functions to set up OpenGL shader programs for rendering
+
+void recalc_trans(){
+	trans[0][0]=cos(theta);
+	trans[0][1]=-sin(theta);
+	trans[1][0]=sin(theta);
+	trans[1][1]=cos(theta);
+}
+
+//Structures for various data-types.
+struct MyGeometry
+{
+	// OpenGL names for array buffer objects, vertex array object
+	GLuint  vertexBuffer;
+	GLuint  textureBuffer;
+	GLuint  colourBuffer;
+	GLuint  vertexArray;
+	GLsizei elementCount;
+
+	// initialize object names to zero (OpenGL reserved value)
+	MyGeometry() : vertexBuffer(0), colourBuffer(0), vertexArray(0), elementCount(0)
+	{}
+};
 
 struct MyShader
 {
@@ -62,6 +86,19 @@ struct MyShader
 	MyShader() : vertex(0), fragment(0), program(0)
 	{}
 };
+
+struct MyTexture
+{
+	GLuint textureID;
+	GLuint target;
+	int width;
+	int height;
+
+	// initialize object names to zero (OpenGL reserved value)
+	MyTexture() : textureID(0), target(0), width(0), height(0)
+	{}
+};
+
 
 // load, compile, and link shaders, returning true if successful
 bool InitializeShaders(MyShader *shader)
@@ -95,19 +132,8 @@ void DestroyShaders(MyShader *shader)
 // --------------------------------------------------------------------------
 // Functions to set up OpenGL buffers for storing textures
 
-struct MyTexture
-{
-	GLuint textureID;
-	GLuint target;
-	int width;
-	int height;
 
-	// initialize object names to zero (OpenGL reserved value)
-	MyTexture() : textureID(0), target(0), width(0), height(0)
-	{}
-};
-
-bool InitializeTexture(MyTexture* texture, const char* filename, GLuint target = GL_TEXTURE_2D)
+bool InitializeTexture(MyGeometry *geometry, MyTexture* texture, const char* filename, GLuint target = GL_TEXTURE_2D)
 {
 	int numComponents;
 	stbi_set_flip_vertically_on_load(true);
@@ -127,6 +153,43 @@ bool InitializeTexture(MyTexture* texture, const char* filename, GLuint target =
 		glTexParameteri(texture->target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 		glTexParameteri(texture->target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 		glTexParameteri(texture->target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	
+
+		GLfloat ratio = ( ((GLfloat) texture->width) / ((GLfloat)texture->height));
+			printf("WHY: %f\n",ratio);	
+		if(ratio >= 1){
+			const GLfloat vertices[][2] = {
+				{-1.f,	-1/ratio},
+				{-1.f,	1/ratio},
+				{1.f,	-1/ratio},
+				{1.f,	1/ratio}
+			};
+			glBindBuffer(GL_ARRAY_BUFFER, geometry->vertexBuffer);
+			glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+			printf("HIO\n");
+		}else{
+			const GLfloat vertices[][2] = {
+				{-ratio,	-1.f},
+				{-ratio,	1.f},
+				{ratio,	-1.f},
+				{ratio,	1.f}
+			};
+			glBindBuffer(GL_ARRAY_BUFFER, geometry->vertexBuffer);
+			glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+			printf("HIO2\n");
+		}
+
+		const GLfloat textureCoords[][2] = {
+			{0,						0},
+//			{0, 		texture->width},
+			{0,	texture->height},
+//			{texture->height,	 	0},
+			{texture->width,	0},
+//			{texture->height, texture->width}	
+			{texture->width,	texture->height}
+			};
+		glBindBuffer(GL_ARRAY_BUFFER, geometry->textureBuffer);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(textureCoords), textureCoords, GL_STATIC_DRAW);
 
 		// Clean up
 		glBindTexture(texture->target, 0);
@@ -152,19 +215,6 @@ void SaveImage(const char* filename, int width, int height, unsigned char *data,
 // --------------------------------------------------------------------------
 // Functions to set up OpenGL buffers for storing geometry data
 
-struct MyGeometry
-{
-	// OpenGL names for array buffer objects, vertex array object
-	GLuint  vertexBuffer;
-	GLuint  textureBuffer;
-	GLuint  colourBuffer;
-	GLuint  vertexArray;
-	GLsizei elementCount;
-
-	// initialize object names to zero (OpenGL reserved value)
-	MyGeometry() : vertexBuffer(0), colourBuffer(0), vertexArray(0), elementCount(0)
-	{}
-};
 
 // create buffers and fill with geometry data, returning true if successful
 bool InitializeGeometry(MyGeometry *geometry)
@@ -265,13 +315,11 @@ void RenderScene(MyGeometry *geometry, MyTexture* texture, MyShader *shader)
 	glBindVertexArray(geometry->vertexArray);
 	glBindTexture(texture->target, texture->textureID);
 
-	c+=0.01;
-//	GLfloat trans[2][2] = {{cos(c),sin(c)},{-sin(c),cos(c)}}; 	//2D transformation Matrix
-//	GLfloat offset[2] = {0,1};				//2D offset vector
-
 	GLint uniTransform = glGetUniformLocation(shader->program, "transform");
 	glUniformMatrix2fv(uniTransform, 1, GL_FALSE, *trans);
-	CheckGLErrors();
+
+	GLint uniZoom = glGetUniformLocation(shader->program, "zoom");
+	glUniform1f(uniZoom, zoom);
 
 	GLint uniOffset = glGetUniformLocation(shader->program, "offset");
 	glUniform2fv(uniOffset, 1, offset);
@@ -302,12 +350,37 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
 {
 	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
 		glfwSetWindowShouldClose(window, GL_TRUE);
-	if (key == GLFW_KEY_A)
-		trans[0][0] = trans[0][0]+0.1f ;
-		trans[0][1] = trans[0][1]+0.1f ;
-		trans[1][0] = trans[1][0]+0.1f ;
-		trans[1][1] = trans[1][1]+0.1f ;
+	if (key == GLFW_KEY_Q){
+		zoom+=0.1f;
+	}
+	if (key == GLFW_KEY_E){
+		zoom-=0.1f;
+		if(zoom <= 0){ zoom = 0.1f;}
+	}
+	if (key == GLFW_KEY_W){
+		offset[1] = offset[1]-(0.1f/(zoom));
+	}
+	if (key == GLFW_KEY_S){
+		offset[1] = offset[1]+(0.1f/(zoom));
+	}
+	if (key == GLFW_KEY_A){
+		offset[0] = offset[0]+(0.1f/(zoom));
+	}
+	if (key == GLFW_KEY_D){
+		offset[0] = offset[0]-(0.1f/(zoom));
+	}
+	if (key == GLFW_KEY_Z){
+		theta += 0.1f/PI;
+		recalc_trans();
+	}
+	if (key == GLFW_KEY_X){
+		theta -= 0.1f/PI;
+		recalc_trans();
+	}	
 }
+
+
+
 
 // ==========================================================================
 // PROGRAM ENTRY POINT
@@ -354,7 +427,7 @@ int main(int argc, char *argv[])
 		cout << "Program failed to intialize geometry!" << endl;
 
 	MyTexture texture;
-	if(!InitializeTexture(&texture, "test.png", GL_TEXTURE_RECTANGLE))
+	if(!InitializeTexture(&geometry, &texture, argv[1], GL_TEXTURE_RECTANGLE))
 		cout << "Program failed to intialize texture!" << endl;
 
 
