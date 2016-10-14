@@ -16,92 +16,27 @@ out vec4 FragmentColour;
 uniform sampler2DRect tex;
 
 struct fData {
-	int bw_mode;	// 0=none, 1= L1. ,2=L2, 3=L3, 4=sepia
-	int conv_mode; // 0 = none, 1= sobel edge (horizontal), 2= sobel_edge(vertical) 3=sobel_edge(both, 4=unsharp, 5=gaussian 3x3, 6=gaussian 5x5, 7=gaussian 7x7.
+	int bw_mode;		// 0=none, 1= L1, 2=L2, 3=L3, 4=sepia
+	int conv_mode;  	// 0=none, 1= sobel edge (horizontal), 2= sobel_edge(vertical)
+						// 3=sobel_edge(both, 4=unsharp, 5=gaussian 3x3,
+						// 6=gaussian 5x5, 7=gaussian 7x7.
 };
 
 uniform fData fragData;
-/*
-float data=0;
-float sigma=0.6f; //FOR DEBUG MODE
-float e = 2.7182818284f;
 
-int x; int y;
+#define e 2.7182818284f
+#define pi 3.1415926534
 
-void gaussian(){
-
-//	//Hard coded 2D gaussian formula   DOESN'T SEEM TO WORK.
-//	float sigma;
-//	if(fragData.conv_mode == 5){
-//		sigma=0.6f;
-//	float[3] matrix=float[3](0.2,0.6,0.2);
-//	}else if(fragData.conv_mode == 6){
-//		sigma=1.f;
-//		float[5] matrix=float[5](0.06,0.24,0.4,0.24,0.06);
-//	}else if(fragData.conv_mode == 7){
-//		//sigma=1.4;
-//		float[7] matrix=float[7](0.03,0.11,0.22,0.28,0.22,0.11,0.03);
-//	}
-//	float s2 = sigma*sigma;
-//	float a = ((2.f*3.14159f)*s2);
-//	float b = pow(e,-((x*x+y*y)/2.f*s2));
-//	return(b/a);
-//	data = (1.f/(2.f*3.14159f*sigma*sigma))*pow(e,-((x*x+y*y)/2.f*sigma*sigma));
-//	data = (matrix[x] * matrix[y]);
+float gaussian1d(int x, float s){
+    float ret;
+    ret=(1.f)/sqrt(2*pi*s*s);
+    ret *= pow(e,(-x*x)/(2*s*s));
+    return(ret);
+}
+float gaussian2d(int x, int y, float sigma){
+	return(gaussian1d(x,sigma)*gaussian1d(y,sigma));
 }
 
-
-vec4 convolv(vec2 coords){	
-	vec4 colour=vec4(0);
-//	colour = texture(tex,coords+vec2(0,0));  
-
-	int xsize=3;
-	int ysize=3;
-	
-	int debug=1;
-	
-//	if(fragData.conv_mode == 5 || fragData.conv_mode == 6 || fragData.conv_mode == 7 || debug==1){
-//		if(fragData.conv_mode == 6){xsize=5;ysize=5;}
-//		else if(fragData.conv_mode == 7){xsize=7;ysize=7;} //Sets the required matrix sizes
-
-
-
-//	if(fragData.conv_mode == 5){
-//		sigma=0.6f;
-//		float[3] matrix=float[3](0.2,0,1.9);
-//	}else if(fragData.conv_mode == 6){
-//		sigma=1.f;
-//		float[5] matrix=float[5](0.06,0.24,0.4,0.24,0.06);
-//	}else if(fragData.conv_mode == 7){
-//		//sigma=1.4;
-//		float[7] matrix=float[7](0.03,0.11,0.22,0.28,0.22,0.11,0.03);
-//	}
-	int r; int c;
-	int ri; int ci;
-		
-		for(r= -(ysize/2) ; r < (ysize/2) ; r++){    	
-			for(c= -(xsize/2) ; c < (xsize/2) ; c++){  	
-				ri = (ysize/2) + r; 
-				ci = (xsize/2) + c;
-//				float data = gaussian(r,c,xsize); //THIS DOES NOT WORK. 
-//				data *= 5.f;
-//				data = 1f;
-				x=r; y=c;
-				gaussian();
-//				data = (1.f/(2.f*3.14159f*sigma*sigma))*pow(e,-((x*x+y*y)/2.f*sigma*sigma));
-//				data *= 2.f;
-				return(vec4(data*texture(tex,coords)));
-			}
-		}
-
-//	}
-
-
-	colour[3]=0;
-	return(colour);
-}
-
-*/
 
 vec4 conv_3x3(mat3 matrix, vec2 Cords){
 	int row;
@@ -110,12 +45,55 @@ vec4 conv_3x3(mat3 matrix, vec2 Cords){
 	for(row=0 ; row <= 2 ; row++){
 		for(col=0 ; col <= 2; col++){
 			sum += matrix[2-row][2-col]*texture(tex,Cords + vec2(row,col));
-
 		}
 	}
 	return(abs(sum));
-	
 }
+
+vec4 convolv(vec2 coords){
+	vec4 colour=vec4(0);
+	float sigma=1f;
+	int xsize=0;
+	int ysize=0;
+
+	mat3 hor_edge=mat3(1,0,-1,2,0,-2,1,0,-1);
+	mat3 vert_edge=mat3(1,2,1,0,0,0,-1,-2,-1);
+	mat3 unsharp=mat3(0,-1,0,-1,5,-1,0,-1,0);
+	mat3 gauss=mat3(0.04,0.12,0.04,0.12,0.36,0.12,0.04,0.12,0.04);	
+//	colour = conv_3x3(gauss, newCoords);
+
+	
+	if(fragData.conv_mode == 5 || fragData.conv_mode == 6 || fragData.conv_mode == 7){
+		if(fragData.conv_mode >= 5){
+			int avar = fragData.conv_mode - 4;
+			avar *= 2;
+			avar++;
+			xsize = avar;
+			ysize = avar;
+			sigma = avar/5.f;
+		}
+
+//		if(fragData.conv_mode == 5){xsize=3;ysize=3; 		sigma=0.6f;}
+//		else if(fragData.conv_mode == 6){xsize=5;ysize=5;	sigma=1.0f;}
+//		else if(fragData.conv_mode == 7){xsize=7;ysize=7;	sigma=1.4f;} //Sets the required matrix sizes
+
+		int r; int c;
+		int ri; int ci;
+			for(r= 0; r <= ysize ; r++){    	
+				for(c= 0 ; c < xsize ; c++){
+					int x = xsize/2 - r;
+					int y = ysize/2 - c;
+					int cx = r - xsize/2;
+					int rx = c - ysize/2;
+					float data = gaussian2d(x,y,sigma);
+					colour += (vec4(data*texture(tex,coords+vec2(rx,cx))));
+				}
+			}
+	}
+	colour[3]=0;
+	return(colour);
+}
+
 
 void main(void){
     float res = 1f;
@@ -125,40 +103,31 @@ void main(void){
 
 	vec4 colour=vec4(0);
 
-
-	mat3 hor_edge=mat3(1,0,-1,2,0,-2,1,0,-1);
-	mat3 vert_edge=mat3(1,2,1,0,0,0,-1,-2,-1);
-	mat3 unsharp=mat3(0,-1,0,-1,5,-1,0,-1,0);
-	mat3 gauss=mat3(0.04,0.12,0.04,0.12,0.36,0.12,0.04,0.12,0.04);	
-	colour = conv_3x3(gauss, newCoords);
-
-
-//	if(fragData.conv_mode == 0){
-//		colour = texture(tex,newCoords+vec2(0,0));  
-//		colour = vec4(0);
-//	}else{
-//		colour = convolv(newCoords);		//Convolv if needed.
-//	}
+	if(fragData.conv_mode == 0){
+		colour = texture(tex,newCoords+vec2(0,0));  
+	}else{
+		colour = convolv(newCoords);		//Convolv if needed.
+	}
 
 	if(fragData.bw_mode == 1){
 		float lum;				//L = 1/3R + 1/3G + 1/3B
-		lum = texture(tex, newCoords)[0]*	0.33333f; //RED
-		lum += texture(tex, newCoords)[1]*	0.33333f; //GREEN
-		lum += texture(tex, newCoords)[2]*	0.33333f; //BLUE
+		lum = colour[0]*	0.33333f; //RED
+		lum += colour[1]*	0.33333f; //GREEN
+		lum += colour[2]*	0.33333f; //BLUE
 		colour.xyz=vec3(lum);
 	
 	}else if(fragData.bw_mode == 2){
 		float lum;				//L = 0.299 R + 0.587 G + 0.114 B
-		lum = texture(tex, newCoords)[0]*	0.299f; //RED
-		lum += texture(tex, newCoords)[1]*	0.587f; //GREEN
-		lum += texture(tex, newCoords)[2]*	0.114f; //BLUE
+		lum = colour[0]*	0.299f; //RED
+		lum += colour[1]*	0.587f; //GREEN
+		lum += colour[2]*	0.114f; //BLUE
 		colour.xyz=vec3(lum);
 	
 	}else if(fragData.bw_mode == 3){
 		float lum;				//L = 0.213 R + 0.715 G + 0.072 B
-		lum = texture(tex, newCoords)[0]*	0.213f; //RED
-		lum += texture(tex, newCoords)[1]*	0.715f; //GREEN
-		lum += texture(tex, newCoords)[2]*	0.072f; //BLUE
+		lum = colour[0]*	0.213f; //RED
+		lum += colour[1]*	0.715f; //GREEN
+		lum += colour[2]*	0.072f; //BLUE
 		colour.xyz=vec3(lum);
 	}else if(fragData.bw_mode == 4){
 		//SEPIA  : http://www.techrepublic.com/blog/how-do-i/how-do-i-convert-images-to-grayscale-and-sepia-tone-using-c/
@@ -166,13 +135,13 @@ void main(void){
 				outputGreen = (inputRed * .349) + (inputGreen *.686) + (inputBlue * .168)
 				outputBlue = (inputRed * .272) + (inputGreen *.534) + (inputBlue * .131)
 			*/
-		float r=texture(tex,newCoords)[0];
-		float g=texture(tex,newCoords)[1];
-		float b=texture(tex,newCoords)[2];
+		float r=colour[0];
+		float g=colour[1];
+		float b=colour[2];
 		colour.x = r*.393f	+ g*.769f	+ b*.189f ;
 		colour.y = r*.349f	+ g*.686f	+ b*.168f ;
 		colour.z = r*.272f	+ g*.534f	+ b*.131f ;
 	}
-    FragmentColour = colour; //convolv(newCoords);
+    FragmentColour = colour;
 }
 

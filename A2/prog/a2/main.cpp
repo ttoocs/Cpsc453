@@ -34,8 +34,8 @@
 
 
 #define PI 3.1415926535f
-#define WINDOW_X 512
-#define WINDOW_Y 512
+#define WINDOW_X 1512
+#define WINDOW_Y 1512
 
 
 using namespace std;
@@ -94,7 +94,7 @@ void recalc_trans(GLfloat newtheta){
 struct fData {
 	int bw_mode;
 	int conv_mode;
-	fData() : bw_mode(0), conv_mode(7)
+	fData() : bw_mode(0), conv_mode(0)
 	{}
 };
 fData fragData;
@@ -359,19 +359,13 @@ void RenderScene(MyGeometry *geometry, MyTexture* texture, MyShader *shader)
 	GLint uniOffset = glGetUniformLocation(shader->program, "offset");
 	glUniform2fv(uniOffset, 1, offset);
 
-//	printf("hi\n");
-//	CheckGLErrors();
-//	printf("ho\n");
-	
 	GLint uniData = glGetUniformLocation(shader->program, "fragData");
-	glUniform1i(uniData, fragData.bw_mode);
-//	glUniform1i(uniData+1, fragData.conv_mode);  //TODO BROKEN
-//	glUniform1i(uniData+1, 7);
-//	CheckGLErrors();
+	glUniform1i(uniData+1, fragData.bw_mode);
+	glUniform1i(uniData+2, fragData.conv_mode); 
 
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, geometry->elementCount);
 //	printf("hiw3432\n");
-//	CheckGLErrors();
+	CheckGLErrors();
 //	printf("ho523\n");
 
 	// reset state to default (no shader or geometry bound)
@@ -405,14 +399,20 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 	}
     if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE) {
 		Mdown=false;
-		mouseoffset();
+//		mouseoffset();
 	}
+	
 }
 
 static void cursor_position_callback(GLFWwindow* window, double xpos, double ypos)
 {
 	mouseX= (xpos/WINDOW_X*2 -1.f)/zoom;
 	mouseY= (ypos/WINDOW_Y*2 -1.f)/zoom;
+	if(Mdown){
+		mouseoffset();
+		ImouseX = mouseX;
+		ImouseY = mouseY;
+	}
 }
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 {
@@ -451,7 +451,29 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
 	}
 	if (key == GLFW_KEY_X){
 		recalc_trans(-0.1f/PI);
-	}	
+	}
+	if (key == GLFW_KEY_R && action == GLFW_PRESS){
+		fragData.conv_mode++;
+		//if(fragData.conv_mode > 7) fragData.conv_mode=0;
+		printf("Frag mode: %d\n",fragData.conv_mode);
+	}
+	if (key == GLFW_KEY_F && action == GLFW_PRESS){
+		fragData.conv_mode--;
+		if(fragData.conv_mode < 0) fragData.conv_mode=1;
+		printf("Frag mode: %d\n",fragData.conv_mode);
+	}
+	if (key == GLFW_KEY_T && action == GLFW_PRESS){
+		fragData.bw_mode++;
+		if(fragData.bw_mode > 4) fragData.bw_mode=0;
+		printf("B/W mode: %d\n",fragData.bw_mode);
+	}
+	if (key == GLFW_KEY_G && action == GLFW_PRESS){
+		fragData.bw_mode--;
+		if(fragData.bw_mode < 0) fragData.bw_mode=4;
+		printf("B/W mode: %d\n",fragData.bw_mode);
+	}
+	
+		
 }
 
 
