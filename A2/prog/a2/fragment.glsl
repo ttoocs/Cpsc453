@@ -32,8 +32,7 @@ void gaussian(){
 //	//Hard coded 2D gaussian formula   DOESN'T SEEM TO WORK.
 //	float sigma;
 //	if(fragData.conv_mode == 5){
-//		sigma=0.6f;
-	float[3] matrix=float[3](0.2,0.6,0.2);
+//		sigma=0.6f
 //	}else if(fragData.conv_mode == 6){
 //		sigma=1.f;
 //		float[5] matrix=float[5](0.06,0.24,0.4,0.24,0.06);
@@ -78,7 +77,7 @@ vec4 convolv(vec2 coords){
 //	}
 	int r; int c;
 	int ri; int ci;
-	
+	float[3] matrix=float[3](0.2,0.6,0.2);
 		for(r= -(ysize/2) ; r < (ysize/2) ; r++){    	
 			for(c= -(xsize/2) ; c < (xsize/2) ; c++){  	
 				ri = (ysize/2) + r; 
@@ -87,7 +86,7 @@ vec4 convolv(vec2 coords){
 //				data *= 5.f;
 //				data = 1f;
 				x=r; y=c;
-				gaussian();
+				data = (matrix[x] * matrix[y]);
 //				data = (1.f/(2.f*3.14159f*sigma*sigma))*pow(e,-((x*x+y*y)/2.f*sigma*sigma));
 //				data *= 2.f;
 				colour += data*texture(tex,coords);
@@ -114,7 +113,7 @@ void main(void){
 //	}else{
 		colour = convolv(newCoords);		//Convolv if needed.
 //	}
-
+/*
 	if(fragData.bw_mode == 1){
 		float lum;				//L = 1/3R + 1/3G + 1/3B
 		lum = texture(tex, newCoords)[0]*	0.33333f; //RED
@@ -137,17 +136,17 @@ void main(void){
 		colour.xyz=vec3(lum);
 	}else if(fragData.bw_mode == 4){
 		//SEPIA  : http://www.techrepublic.com/blog/how-do-i/how-do-i-convert-images-to-grayscale-and-sepia-tone-using-c/
-			/*	outputRed = (inputRed * .393) + (inputGreen *.769) + (inputBlue * .189)
+			///*	outputRed = (inputRed * .393) + (inputGreen *.769) + (inputBlue * .189)
 				outputGreen = (inputRed * .349) + (inputGreen *.686) + (inputBlue * .168)
 				outputBlue = (inputRed * .272) + (inputGreen *.534) + (inputBlue * .131)
-			*/
+			//*/
 		float r=texture(tex,newCoords)[0];
 		float g=texture(tex,newCoords)[1];
 		float b=texture(tex,newCoords)[2];
 		colour.x = r*.393f	+ g*.769f	+ b*.189f ;
 		colour.y = r*.349f	+ g*.686f	+ b*.168f ;
 		colour.z = r*.272f	+ g*.534f	+ b*.131f ;
-	}
+	} */
     FragmentColour = colour;
 }
 
