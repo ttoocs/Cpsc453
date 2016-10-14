@@ -21,7 +21,7 @@ struct fData {
 };
 
 uniform fData fragData;
-
+/*
 float data=0;
 float sigma=0.6f; //FOR DEBUG MODE
 float e = 2.7182818284f;
@@ -34,7 +34,7 @@ void gaussian(){
 //	float sigma;
 //	if(fragData.conv_mode == 5){
 //		sigma=0.6f;
-	float[3] matrix=float[3](0.2,0.6,0.2);
+//	float[3] matrix=float[3](0.2,0.6,0.2);
 //	}else if(fragData.conv_mode == 6){
 //		sigma=1.f;
 //		float[5] matrix=float[5](0.06,0.24,0.4,0.24,0.06);
@@ -47,9 +47,7 @@ void gaussian(){
 //	float b = pow(e,-((x*x+y*y)/2.f*s2));
 //	return(b/a);
 //	data = (1.f/(2.f*3.14159f*sigma*sigma))*pow(e,-((x*x+y*y)/2.f*sigma*sigma));
-
-	data = (matrix[x] * matrix[y]);
-	
+//	data = (matrix[x] * matrix[y]);
 }
 
 
@@ -103,6 +101,22 @@ vec4 convolv(vec2 coords){
 	return(colour);
 }
 
+*/
+
+vec4 conv_3x3(mat3 matrix, vec2 Cords){
+	int row;
+	int col;
+	vec4 sum=vec4(0);
+	for(row=0 ; row <= 2 ; row++){
+		for(col=0 ; col <= 2; col++){
+			sum += matrix[2-row][2-col]*texture(tex,Cords + vec2(row,col));
+
+		}
+	}
+	return(abs(sum));
+	
+}
+
 void main(void){
     float res = 1f;
     vec2 newCoords;
@@ -110,6 +124,15 @@ void main(void){
     newCoords.y = textureCoords.y;
 
 	vec4 colour=vec4(0);
+
+
+	mat3 hor_edge=mat3(1,0,-1,2,0,-2,1,0,-1);
+	mat3 vert_edge=mat3(1,2,1,0,0,0,-1,-2,-1);
+	mat3 unsharp=mat3(0,-1,0,-1,5,-1,0,-1,0);
+	mat3 gauss=mat3(0.04,0.12,0.04,0.12,0.36,0.12,0.04,0.12,0.04);	
+	colour = conv_3x3(gauss, newCoords);
+
+
 //	if(fragData.conv_mode == 0){
 //		colour = texture(tex,newCoords+vec2(0,0));  
 //		colour = vec4(0);
@@ -150,6 +173,6 @@ void main(void){
 		colour.y = r*.349f	+ g*.686f	+ b*.168f ;
 		colour.z = r*.272f	+ g*.534f	+ b*.131f ;
 	}
-    FragmentColour = convolv(newCoords);
+    FragmentColour = colour; //convolv(newCoords);
 }
 
