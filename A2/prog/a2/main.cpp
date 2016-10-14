@@ -34,9 +34,10 @@
 
 
 #define PI 3.1415926535f
-#define WINDOW_X 1512
-#define WINDOW_Y 1512
+#define WINDOW_X 512
+#define WINDOW_Y 512
 
+#define PICTURES {"image1-mandrill.png","image2-uclogo.png","image3-aerial.jpg","image4-thirsk.jpg","image5-pattern.png","test.png","pt_hero.jpg"}
 
 using namespace std;
 // --------------------------------------------------------------------------
@@ -51,7 +52,6 @@ GLfloat trans[2][2] = {{1,0},{0,1}}; 	//2D transformation Matrix
 GLfloat offset[2] = {0,0};				//2D offset vector
 GLfloat theta = 0;
 
-
 GLfloat mouseX;
 GLfloat mouseY;
 GLfloat ImouseX;	//Various mouse defines.
@@ -59,13 +59,14 @@ GLfloat ImouseY;
 GLfloat DmouseX;
 GLfloat DmouseY;
 bool Mdown = false;
-//GLfloat Moffset[2] ={0,0};
-
-
 
 string LoadSource(const string &filename);
 GLuint CompileShader(GLenum shaderType, const string &source);
 GLuint LinkProgram(GLuint vertexShader, GLuint fragmentShader);
+
+bool reload_pic=false;
+int Picnum=0;
+char * Pictures[]=PICTURES;
 
 void mouseoffset(){	
 	DmouseX = ImouseX-mouseX;
@@ -459,7 +460,7 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
 	}
 	if (key == GLFW_KEY_F && action == GLFW_PRESS){
 		fragData.conv_mode--;
-		if(fragData.conv_mode < 0) fragData.conv_mode=1;
+		if(fragData.conv_mode < 0) fragData.conv_mode=0;
 		printf("Frag mode: %d\n",fragData.conv_mode);
 	}
 	if (key == GLFW_KEY_T && action == GLFW_PRESS){
@@ -472,11 +473,52 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
 		if(fragData.bw_mode < 0) fragData.bw_mode=4;
 		printf("B/W mode: %d\n",fragData.bw_mode);
 	}
-	
+	if (key == GLFW_KEY_2 && action == GLFW_PRESS){
+		Picnum++;
+		if(Picnum > (sizeof(Pictures)/sizeof(char*)-1)){Picnum=0;}
+		printf("Switching to: %d: %s\n",Picnum, Pictures[Picnum]);
+		reload_pic=true;
+	}	
+	if (key == GLFW_KEY_1 && action == GLFW_PRESS){
+		Picnum--;
+		if(Picnum < 0) {Picnum=sizeof(Pictures)/sizeof(char *)-1;}
+		printf("Switching to: %d: %s\n",Picnum, Pictures[Picnum]);
+		reload_pic=true;
+	}	
 		
 }
 
-
+void print_help(){
+	printf("#############################################KEYS################################################\n");
+	printf("Esc: Exit\n");
+	printf("Q: Zoom in\n");
+	printf("E: Zoom out\n");
+	printf("W: Move down\n");
+	printf("S: Move up\n");
+	printf("A: Move right\n");
+	printf("D: Move left\n");
+	printf("Z: Rotate right\n");
+	printf("X: Rotate left\n");
+	printf("R: Increment convolution mode\n");
+	printf("F: Decrement convolution mode\n");
+	printf("T: Increment colour mode\n");
+	printf("G: Decrement colour mode\n");
+	printf("1: Prior Image\n");
+	printf("2: Next Image\n");
+	printf("############################### Frag modes ########################\n");
+	printf("0: None\n");
+	printf("1: Horizontal Sobel Edge\n");
+	printf("2: Vertical Sobel Edge\n");
+	printf("3: Merged Sobel Edge\n");
+	printf("4: Unsharp\n");
+	printf("5+: Gaussian Blur\n");
+	printf("############################## B/W modes #################\n");
+	printf("0 : None\n");
+	printf("1 : L1\n");
+	printf("2 : L2\n");
+	printf("3 : L3\n");
+	printf("4 : Sepia\n");
+}
 
 
 // ==========================================================================
@@ -484,6 +526,7 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
 
 int main(int argc, char *argv[])
 {
+	print_help();
 	// initialize the GLFW windowing system
 	if (!glfwInit()) {
 		cout << "ERROR: GLFW failed to initialize, TERMINATING" << endl;
@@ -527,16 +570,21 @@ int main(int argc, char *argv[])
 		cout << "Program failed to intialize geometry!" << endl;
 
 	MyTexture texture;
-	if(!InitializeTexture(&geometry, &texture, argv[1], GL_TEXTURE_RECTANGLE))
+	if(!InitializeTexture(&geometry, &texture, Pictures[0], GL_TEXTURE_RECTANGLE))
 		cout << "Program failed to intialize texture!" << endl;
 
 
 	// run an event-triggered main loop
 	while (!glfwWindowShouldClose(window))
 	{
+		if(reload_pic){
+			reload_pic=false;
+			InitializeTexture(&geometry, &texture, Pictures[Picnum], GL_TEXTURE_RECTANGLE);
+		}
+		
 		// call function to draw our scene
 		RenderScene(&geometry, &texture, &shader); //render scene with texture
-	CheckGLErrors();
+		CheckGLErrors();
 
 		glfwSwapBuffers(window);
 

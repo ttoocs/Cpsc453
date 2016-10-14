@@ -60,35 +60,35 @@ vec4 convolv(vec2 coords){
 	mat3 vert_edge=mat3(1,2,1,0,0,0,-1,-2,-1);
 	mat3 unsharp=mat3(0,-1,0,-1,5,-1,0,-1,0);
 	mat3 gauss=mat3(0.04,0.12,0.04,0.12,0.36,0.12,0.04,0.12,0.04);	
-//	colour = conv_3x3(gauss, newCoords);
-
 	
-	if(fragData.conv_mode == 5 || fragData.conv_mode == 6 || fragData.conv_mode == 7){
-		if(fragData.conv_mode >= 5){
-			int avar = fragData.conv_mode - 4;
-			avar *= 2;
-			avar++;
-			xsize = avar;
-			ysize = avar;
-			sigma = avar/5.f;
-		}
-
-//		if(fragData.conv_mode == 5){xsize=3;ysize=3; 		sigma=0.6f;}
-//		else if(fragData.conv_mode == 6){xsize=5;ysize=5;	sigma=1.0f;}
-//		else if(fragData.conv_mode == 7){xsize=7;ysize=7;	sigma=1.4f;} //Sets the required matrix sizes
-
+	if(fragData.conv_mode ==1){
+		colour = conv_3x3(hor_edge,coords);
+	}else if(fragData.conv_mode ==2){
+		colour = conv_3x3(vert_edge,coords);
+	}else if(fragData.conv_mode ==3){
+		colour = conv_3x3(hor_edge,coords)/2f;
+		colour += conv_3x3(vert_edge,coords)/2f;
+	}else if(fragData.conv_mode ==4){
+		colour = conv_3x3(unsharp,coords);
+	}else if(fragData.conv_mode > 2){
+		int avar = fragData.conv_mode - 4;
+		avar *= 2;
+		avar++;
+		xsize = avar;
+		ysize = avar;
+		sigma = avar/5f;
 		int r; int c;
 		int ri; int ci;
-			for(r= 0; r <= ysize ; r++){    	
-				for(c= 0 ; c < xsize ; c++){
-					int x = xsize/2 - r;
-					int y = ysize/2 - c;
-					int cx = r - xsize/2;
-					int rx = c - ysize/2;
-					float data = gaussian2d(x,y,sigma);
-					colour += (vec4(data*texture(tex,coords+vec2(rx,cx))));
-				}
+		for(r= 0; r <= ysize ; r++){    	
+			for(c= 0 ; c < xsize ; c++){
+				int x = xsize/2 - r;
+				int y = ysize/2 - c;
+				int cx = r - xsize/2;
+				int rx = c - ysize/2;
+				float data = gaussian2d(x,y,sigma);
+				colour += (data*texture(tex,coords+vec2(rx,cx)));
 			}
+		}
 	}
 	colour[3]=0;
 	return(colour);
