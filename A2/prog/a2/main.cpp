@@ -359,21 +359,27 @@ void RenderScene(MyGeometry *geometry, MyTexture* texture, MyShader *shader)
 	GLint uniOffset = glGetUniformLocation(shader->program, "offset");
 	glUniform2fv(uniOffset, 1, offset);
 
+//	printf("hi\n");
+//	CheckGLErrors();
+//	printf("ho\n");
 	
 	GLint uniData = glGetUniformLocation(shader->program, "fragData");
 	glUniform1i(uniData, fragData.bw_mode);
-//	glUniform1i(uniData+1, fragData.conv_mode);
-	glUniform1i(uniData+1, 7);
+//	glUniform1i(uniData+1, fragData.conv_mode);  //TODO BROKEN
+//	glUniform1i(uniData+1, 7);
+//	CheckGLErrors();
 
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, geometry->elementCount);
+//	printf("hiw3432\n");
+//	CheckGLErrors();
+//	printf("ho523\n");
 
 	// reset state to default (no shader or geometry bound)
 	glBindTexture(texture->target, 0);
 	glBindVertexArray(0);
 	glUseProgram(0);
 
-	// check for an report any OpenGL errors
-	CheckGLErrors();
+	// check for an report any OpenGL error
 }
 
 // --------------------------------------------------------------------------
