@@ -23,6 +23,7 @@
 #include <GLFW/glfw3.h>
 
 #define vpush(X, Y) vertices.push_back(X); vertices.push_back(Y)
+#define cpush(X, Y, Z) colours.push_back(X) ; colours.push_back(Y) ; colours.push_back(Z);
 
 using namespace std;
 
@@ -30,6 +31,7 @@ double mouse_x;
 double mouse_y;
 int width;
 int height;
+int scene=0;
 
 GLint mouse_coord_uniform;
 GLint width_uniform;
@@ -45,8 +47,10 @@ string LoadSource(const string &filename);
 GLuint CompileShader(GLenum shaderType, const string &source);
 GLuint LinkProgram(GLuint vertexShader, GLuint, GLuint, GLuint fragmentShader);
 
+
 // --------------------------------------------------------------------------
 // Functions to set up OpenGL shader programs for rendering
+//
 
 struct MyShader
 {
@@ -60,6 +64,7 @@ struct MyShader
     MyShader() : vertex(0), fragment(0), program(0)
     {}
 };
+MyShader shader;
 
 // load, compile, and link shaders, returning true if successful
 bool InitializeShaders(MyShader *shader)
@@ -111,10 +116,21 @@ struct MyGeometry
 };
 
 void update_verts(MyGeometry *geometry, vector<GLfloat>* vertices){
-//	geometry->elementCount = sizeof(vertices)/sizeof(GLfloat); //Needs to be set properly elsewhere.
 	glBindBuffer(GL_ARRAY_BUFFER, geometry->vertexBuffer);
-	printf("Size is: %lu\n",vertices->size());
-    glBufferData(GL_ARRAY_BUFFER, vertices->size()/2, vertices->data(), GL_STATIC_DRAW);	
+//	printf("Size is: %lu\n",vertices->size());
+    geometry->elementCount = vertices->size()/2;
+    glBufferData(GL_ARRAY_BUFFER, vertices->size()*sizeof(GLfloat), vertices->data(), GL_STATIC_DRAW);	
+}
+
+void update_colours(MyGeometry * geometry, vector<GLfloat>* colours){
+    glBindBuffer(GL_ARRAY_BUFFER, geometry->colourBuffer);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(colours), colours, GL_STATIC_DRAW);
+
+}
+void update_level(int level){
+	GLint uniLvl = glGetUniformLocation(shader.program, "level");
+    glUniform1i(uniLvl, level);
+
 }
 
 // create buffers and fill with geometry data, returning true if successful
@@ -126,19 +142,16 @@ bool InitializeGeometry(MyGeometry *geometry)
 	vpush( -0.5, 0.5 );
 	vpush( 0.5, -0.5 );
 	vpush( 0.5, 0.5 );
-	vpush( -0.5, -0.5 );
+	vpush( -0.8, -0.8 );
+	vpush( -0.8, 0.5 );
+	vpush( 0.8, 0.8 );
+	vpush( -0.8, 0.8 );
 	vpush( -0.5, 0.5 );
+	vpush( -0.5, 0.8 );
 	vpush( 0.5, -0.5 );
-	vpush( 0.5, 0.5 );
-	vpush( -0.5, -0.5 );
-	vpush( -0.5, 0.5 );
-	vpush( 0.5, -0.5 );
-	vpush( 0.5, 0.5 );
-    const GLfloat colours[][3] = {
-        { 1.0, 1.0, 1.0 },
-        { 1.0, 1.0, 1.0 },
-    };
-//    geometry->elementCount = 4;
+	vpush( 0.5, 0.8 );
+	vector<GLfloat> colours;
+	cpush( 1,1,1);
 
     // these vertex attribute indices correspond to those specified for the
     // input variables in the vertex shader
@@ -148,13 +161,10 @@ bool InitializeGeometry(MyGeometry *geometry)
     // create an array buffer object for storing our vertices
     glGenBuffers(1, &geometry->vertexBuffer);
 	update_verts(geometry,&vertices);
-//    glBindBuffer(GL_ARRAY_BUFFER, geometry->vertexBuffer);
-//    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
     // create another one for storing our colours
     glGenBuffers(1, &geometry->colourBuffer);
-    glBindBuffer(GL_ARRAY_BUFFER, geometry->colourBuffer);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(colours), colours, GL_STATIC_DRAW);
+	update_colours(geometry,&colours);
 
     // create a vertex array object encapsulating all our vertex attributes
     glGenVertexArrays(1, &geometry->vertexArray);
@@ -188,6 +198,13 @@ void DestroyGeometry(MyGeometry *geometry)
     glDeleteBuffers(1, &geometry->colourBuffer);
 }
 
+//LOAD SCENE TODO
+void loadscene(){
+	return;
+}
+
+
+
 // --------------------------------------------------------------------------
 // Rendering function that draws our scene to the frame buffer
 
@@ -201,9 +218,9 @@ void RenderScene(MyGeometry *geometry, MyShader *shader)
     // scene geometry, then tell OpenGL to draw our geometry
     glUseProgram(shader->program);
 
-    glUniform2f(mouse_coord_uniform, mouse_x, mouse_y);
-    glUniform1i(width_uniform, width);
-    glUniform1i(height_uniform, height);
+//    glUniform2f(mouse_coord_uniform, mouse_x, mouse_y);
+//    glUniform1i(width_uniform, width);
+//    glUniform1i(height_uniform, height);
 
     glBindVertexArray(geometry->vertexArray);
     glDrawArrays(GL_PATCHES, 0, geometry->elementCount);
@@ -229,8 +246,23 @@ void ErrorCallback(int error, const char* description)
 // handles keyboard input events
 void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
+	int oldscene = scene;
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
         glfwSetWindowShouldClose(window, GL_TRUE);
+	if (key == GLFW_KEY_LEFT && action == GLFW_PRESS)
+		scene --;
+	if (key == GLFW_KEY_RIGHT && action == GLFW_PRESS)
+		scene ++;
+	if (key == GLFW_KEY_A && action == GLFW_PRESS)
+		scene --;
+	if (key == GLFW_KEY_D && action == GLFW_PRESS)
+		scene ++;
+	
+
+	if( scene != oldscene){
+		scene = scene % 2;
+		loadscene();
+	}
 }
 
 void cursor_position_callback(GLFWwindow* window, double xpos, double ypos)
@@ -278,7 +310,7 @@ int main(int argc, char *argv[])
     QueryGLVersion();
 
     // call function to load and compile shader programs
-    MyShader shader;
+    //MyShader shader;
     if (!InitializeShaders(&shader)) {
         cout << "Program could not initialize shaders, TERMINATING" << endl;
         return -1;
