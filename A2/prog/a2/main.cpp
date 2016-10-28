@@ -206,7 +206,7 @@ bool InitializeTexture(MyGeometry *geometry, MyTexture* texture, const char* fil
 			glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 		}else{
 			const GLfloat vertices[][2] = {
-				{-ratio,	-1.f},
+				{-ratio, 	-1.f},
 				{-ratio,	1.f},
 				{ratio,	-1.f},
 				{ratio,	1.f}
