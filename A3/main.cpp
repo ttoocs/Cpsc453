@@ -23,7 +23,22 @@
 #include <GLFW/glfw3.h>
 
 #define vpush(X, Y) vertices.push_back(X); vertices.push_back(Y)
-#define cpush(X, Y, Z) colours.push_back(X) ; colours.push_back(Y) ; colours.push_back(Z);
+#define cpush(X, Y, Z) colours.push_back(X) ; colours.push_back(Y) ; colours.push_back(Z)
+
+
+//NOTE: the last vector encodes the level (redudently 3 times, but that's due to vec size)
+//These encode the level with the type being pushed.
+#define v1push(X1,Y1,X2,Y2) vpush(X1,Y1); vpush(X2,Y2); vpush(0,0) ; vpush(0,0); vpush(1,1)
+#define v2push(X1,Y1,X2,Y2,X3,Y3) vpush(X1,Y1); vpush(X2,Y2); vpush(X3,Y3) ; vpush(0,0); vpush(2,2)
+#define v3push(X1,Y1,X2,Y2,X3,Y3,X4,Y4) vpush(X1,Y1); vpush(X2,Y2); vpush(X3,Y3) ; vpush(X4,Y4); vpush(3,3)
+
+//Likeswise for colours
+#define c1push(X1,Y1,Z1,X2,Y2,Z2) cpush(X1,Y1,Z1); cpush(X2,Y2,Z2); cpush(0,0,0) ; cpush(0,0,0); cpush(1,1,1)
+#define c2push(X1,Y1,Z1,X2,Y2,Z2,X3,Y3,Z3) cpush(X1,Y1,Z1); cpush(X2,Y2,Z3); cpush(X3,Y3,Z3) ; cpush(0,0,0); cpush(2,2,2)
+#define c3push(X1,Y1,Z1,X2,Y2,Z2,X3,Y3,Z3,X4,Y4,Z4) cpush(X1,Y1,Z1); cpush(X2,Y2,Z2); cpush(X3,Y3,Z3) ; cpush(X4,Y4,Z4); cpush(3,3,3)
+
+
+
 
 using namespace std;
 
@@ -37,6 +52,15 @@ GLint mouse_coord_uniform;
 GLint width_uniform;
 GLint height_uniform;
 
+vector<GLfloat> vertices;
+vector<GLfloat> colours;
+
+float c = 0;
+GLfloat zoom = 0.5f;
+GLfloat trans[2][2] = {{1,0},{0,1}};    //2D transformation Matrix
+GLfloat offset[2] = {0,0};              //2D offset vector
+GLfloat theta = 0;
+
 // --------------------------------------------------------------------------
 // OpenGL utility and support function prototypes
 
@@ -46,6 +70,7 @@ bool CheckGLErrors();
 string LoadSource(const string &filename);
 GLuint CompileShader(GLenum shaderType, const string &source);
 GLuint LinkProgram(GLuint vertexShader, GLuint, GLuint, GLuint fragmentShader);
+void RenderScene(bool clear);
 
 
 // --------------------------------------------------------------------------
@@ -114,18 +139,15 @@ struct MyGeometry
     MyGeometry() : vertexBuffer(0), colourBuffer(0), vertexArray(0), elementCount(0)
     {}
 };
+MyGeometry geometry;
 
-void update_verts(MyGeometry *geometry, vector<GLfloat>* vertices){
-	glBindBuffer(GL_ARRAY_BUFFER, geometry->vertexBuffer);
-//	printf("Size is: %lu\n",vertices->size());
-    geometry->elementCount = vertices->size()/2;
-    glBufferData(GL_ARRAY_BUFFER, vertices->size()*sizeof(GLfloat), vertices->data(), GL_STATIC_DRAW);	
-}
-
-void update_colours(MyGeometry * geometry, vector<GLfloat>* colours){
-    glBindBuffer(GL_ARRAY_BUFFER, geometry->colourBuffer);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(colours), colours, GL_STATIC_DRAW);
-
+void update_verts(){
+	glBindBuffer(GL_ARRAY_BUFFER, geometry.vertexBuffer);
+	printf("Size is: %lu\n",vertices.size());
+    geometry.elementCount = vertices.size()/2;
+    glBufferData(GL_ARRAY_BUFFER, vertices.size()*sizeof(GLfloat), vertices.data(), GL_STATIC_DRAW);	
+    glBindBuffer(GL_ARRAY_BUFFER, geometry.colourBuffer);
+    glBufferData(GL_ARRAY_BUFFER, colours.size()*sizeof(GLfloat), colours.data(), GL_STATIC_DRAW);
 }
 void update_level(int level){
 	GLint uniLvl = glGetUniformLocation(shader.program, "level");
@@ -137,21 +159,14 @@ void update_level(int level){
 bool InitializeGeometry(MyGeometry *geometry)
 {
     // three vertex positions and assocated colours of a triangle
-    vector<GLfloat> vertices;
-	vpush( -0.5, -0.5 );
-	vpush( -0.5, 0.5 );
-	vpush( 0.5, -0.5 );
-	vpush( 0.5, 0.5 );
-	vpush( -0.8, -0.8 );
-	vpush( -0.8, 0.5 );
-	vpush( 0.8, 0.8 );
-	vpush( -0.8, 0.8 );
-	vpush( -0.5, 0.5 );
-	vpush( -0.5, 0.8 );
-	vpush( 0.5, -0.5 );
-	vpush( 0.5, 0.8 );
-	vector<GLfloat> colours;
-	cpush( 1,1,1);
+	v1push( -1, -1, 1, 1);
+	v3push( -0.5, -0.5, -0.5, 0.5, 0.5, -0.5 ,  0.5, 0.5 );
+	v3push( -0.8, -0.8, -0.8, 0.5, 0.8,  0.8 , -0.8, 0.8 );
+	v3push( -0.5, 0.5,  -0.5, 0.8, 0.5, -0.5 ,  0.5, 0.8 );
+	c1push( 1,1,1, 1,1,1);
+	c3push( 1,1,1, 1,1,1,1,1,1,1,1,1);
+	c3push( 1,1,1, 1,1,1,1,1,1,1,1,1);
+	c3push( 1,1,1, 1,1,1,1,1,1,1,1,1);
 
     // these vertex attribute indices correspond to those specified for the
     // input variables in the vertex shader
@@ -159,12 +174,11 @@ bool InitializeGeometry(MyGeometry *geometry)
     const GLuint COLOUR_INDEX = 1;
 
     // create an array buffer object for storing our vertices
-    glGenBuffers(1, &geometry->vertexBuffer);
-	update_verts(geometry,&vertices);
-
-    // create another one for storing our colours
     glGenBuffers(1, &geometry->colourBuffer);
-	update_colours(geometry,&colours);
+    // create another one for storing our colours
+    glGenBuffers(1, &geometry->vertexBuffer);
+	update_verts();
+
 
     // create a vertex array object encapsulating all our vertex attributes
     glGenVertexArrays(1, &geometry->vertexArray);
@@ -198,8 +212,37 @@ void DestroyGeometry(MyGeometry *geometry)
     glDeleteBuffers(1, &geometry->colourBuffer);
 }
 
+
+void push_fish(){
+	v2push(1, 1, 2, -1, 0, -1);
+	v2push(0, -1, -2, -1, -1, 1);
+	v2push(-1, 1, 0, 1, 1, 1);
+	v2push(1.2, 0.5, 2.5, 1.0, 1.3, -0.4);
+	c2push(1,1,1, 1,1,1, 1,1,1);
+	c2push(1,1,1, 1,1,1, 1,1,1);
+	c2push(1,1,1, 1,1,1, 1,1,1);
+	c2push(1,1,1, 1,1,1, 1,1,1);
+	
+}
+void push_teapot(){
+	return;
+}
+
+
 //LOAD SCENE TODO
 void loadscene(){
+	scene = scene % 2;	//Adjusts scene to the right size.
+	vertices.clear();
+	colours.clear();
+	if(scene == 1){
+		printf("Drawing fish\n");
+		push_fish();	
+	}else if (scene == 2){
+		printf("Drawing teapot\n");
+		push_teapot();
+	}
+	update_verts();
+	RenderScene(true);
 	return;
 }
 
@@ -208,22 +251,33 @@ void loadscene(){
 // --------------------------------------------------------------------------
 // Rendering function that draws our scene to the frame buffer
 
-void RenderScene(MyGeometry *geometry, MyShader *shader)
+void RenderScene(bool clear)
 {
     // clear screen to a dark grey colour
     glClearColor(0.2, 0.2, 0.2, 1.0);
+	if(clear)
     glClear(GL_COLOR_BUFFER_BIT);
 
     // bind our shader program and the vertex array object containing our
     // scene geometry, then tell OpenGL to draw our geometry
-    glUseProgram(shader->program);
+    glUseProgram(shader.program);
 
 //    glUniform2f(mouse_coord_uniform, mouse_x, mouse_y);
 //    glUniform1i(width_uniform, width);
+
+    GLint uniTransform = glGetUniformLocation(shader.program, "transform");
+    glUniformMatrix2fv(uniTransform, 1, GL_FALSE, *trans);
+
+    GLint uniZoom = glGetUniformLocation(shader.program, "zoom");
+    glUniform1f(uniZoom, zoom);
+
+    GLint uniOffset = glGetUniformLocation(shader.program, "offset");
+    glUniform2fv(uniOffset, 1, offset);
+
 //    glUniform1i(height_uniform, height);
 
-    glBindVertexArray(geometry->vertexArray);
-    glDrawArrays(GL_PATCHES, 0, geometry->elementCount);
+    glBindVertexArray(geometry.vertexArray);
+    glDrawArrays(GL_PATCHES, 0, geometry.elementCount);
 
     // reset state to default (no shader or geometry bound)
     glBindVertexArray(0);
@@ -257,10 +311,7 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
 		scene --;
 	if (key == GLFW_KEY_D && action == GLFW_PRESS)
 		scene ++;
-	
-
 	if( scene != oldscene){
-		scene = scene % 2;
 		loadscene();
 	}
 }
@@ -315,14 +366,13 @@ int main(int argc, char *argv[])
         cout << "Program could not initialize shaders, TERMINATING" << endl;
         return -1;
     }
-    glPatchParameteri(GL_PATCH_VERTICES,4);
+    glPatchParameteri(GL_PATCH_VERTICES,5);
 
     mouse_coord_uniform=glGetUniformLocation(shader.program,"mouse_coord");
     width_uniform=glGetUniformLocation(shader.program,"width");
     height_uniform=glGetUniformLocation(shader.program,"height");
 
     // call function to create and fill buffers with geometry data
-    MyGeometry geometry;
     if (!InitializeGeometry(&geometry))
         cout << "Program failed to intialize geometry!" << endl;
 
@@ -330,7 +380,7 @@ int main(int argc, char *argv[])
     while (!glfwWindowShouldClose(window))
     {
         // call function to draw our scene
-        RenderScene(&geometry, &shader);
+        RenderScene(true);
 
         // scene is rendered to the back buffer, so swap to front for display
         glfwSwapBuffers(window);
