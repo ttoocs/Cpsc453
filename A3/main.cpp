@@ -22,23 +22,38 @@
 #define GL_GLEXT_PROTOTYPES
 #include <GLFW/glfw3.h>
 
+/*
+
 #define vpush(X, Y) vertices.push_back(X); vertices.push_back(Y)
 #define cpush(X, Y, Z) colours.push_back(X) ; colours.push_back(Y) ; colours.push_back(Z)
 
-
 //NOTE: the last vector encodes the level (redudently 3 times, but that's due to vec size)
 //These encode the level with the type being pushed.
-#define v1push(X1,Y1,X2,Y2) vpush(X1,Y1); vpush(X2,Y2); vpush(0,0) ; vpush(0,0); vpush(1,1)
-#define v2push(X1,Y1,X2,Y2,X3,Y3) vpush(X1,Y1); vpush(X2,Y2); vpush(X3,Y3) ; vpush(0,0); vpush(2,2)
-#define v3push(X1,Y1,X2,Y2,X3,Y3,X4,Y4) vpush(X1,Y1); vpush(X2,Y2); vpush(X3,Y3) ; vpush(X4,Y4); vpush(3,3)
+//
+//
+
+#define v1push(X1,Y1,X2,Y2) vpush(X1,Y1); vpush(X2,Y2); vpush(0,0) ; vpush(0,0); vpush(1,1); 
+#define v2push(X1,Y1,X2,Y2,X3,Y3) vpush(X1,Y1); vpush(X2,Y2); vpush(X3,Y3) ; vpush(0,0); vpush(2,2);
+#define v3push(X1,Y1,X2,Y2,X3,Y3,X4,Y4) vpush(X1,Y1); vpush(X2,Y2); vpush(X3,Y3) ; vpush(X4,Y4); vpush(3,3);
+
+//NOTE 
+#define v1pushc(X1,Y1,X2,Y2) v1push(X1,Y1,X2,Y2); if(cntrl_pnts){ pushcpnt(X1,Y1) ; pushcpnt(X2,Y2);}
+#define v2pushc(X1,Y1,X2,Y2,X3,Y3) v2push(X1,Y1,X2,Y2,X3,Y3); if(cntrl_pnts){ pushcpnt(X1,Y1) ; pushncpnt(X2,Y2) ; pushcpnt(X3,Y3);}
+#define v3pushc(X1,Y1,X2,Y2,X3,Y3,X4,Y4) v3push(X1,Y1,X2,Y2,X3,Y3,X4,Y4); if(cntrl_pnts){ pushcpnt(X1,Y1) ; pushncpnt(X2,Y2) ; pushncpnt(X3,Y3); pushcpnt(X4,Y4);}
+
 
 //Likeswise for colours
 #define c1push(X1,Y1,Z1,X2,Y2,Z2) cpush(X1,Y1,Z1); cpush(X2,Y2,Z2); cpush(0,0,0) ; cpush(0,0,0); cpush(1,1,1)
 #define c2push(X1,Y1,Z1,X2,Y2,Z2,X3,Y3,Z3) cpush(X1,Y1,Z1); cpush(X2,Y2,Z3); cpush(X3,Y3,Z3) ; cpush(0,0,0); cpush(2,2,2)
 #define c3push(X1,Y1,Z1,X2,Y2,Z2,X3,Y3,Z3,X4,Y4,Z4) cpush(X1,Y1,Z1); cpush(X2,Y2,Z2); cpush(X3,Y3,Z3) ; cpush(X4,Y4,Z4); cpush(3,3,3)
 
+#define pushscale 0.5f*zoom
 
+#define pushplus(X,Y,A,B,C) v1push(X+pushscale,Y , X-pushscale,Y); v1push(X,Y+pushscale,X,Y-pushscale); c1push(A,B,C,A,B,C); c1push(A,B,C,A,B,C)
+#define pushcpnt(X,Y) pushplus(X,Y,0,1,0);
+#define pushncpnt(X,Y) pushplus(X,Y,1,0,0);
 
+*/
 
 using namespace std;
 
@@ -47,6 +62,9 @@ double mouse_y;
 int width;
 int height;
 int scene=0;
+int sum; 
+
+bool cntrl_pnts=true;
 
 GLint mouse_coord_uniform;
 GLint width_uniform;
@@ -159,7 +177,7 @@ void update_level(int level){
 bool InitializeGeometry(MyGeometry *geometry)
 {
     // three vertex positions and assocated colours of a triangle
-	v1push( -1, -1, 1, 1);
+/*	v1push( -1, -1, 1, 1);
 	v3push( -0.5, -0.5, -0.5, 0.5, 0.5, -0.5 ,  0.5, 0.5 );
 	v3push( -0.8, -0.8, -0.8, 0.5, 0.8,  0.8 , -0.8, 0.8 );
 	v3push( -0.5, 0.5,  -0.5, 0.8, 0.5, -0.5 ,  0.5, 0.8 );
@@ -167,6 +185,8 @@ bool InitializeGeometry(MyGeometry *geometry)
 	c3push( 1,1,1, 1,1,1,1,1,1,1,1,1);
 	c3push( 1,1,1, 1,1,1,1,1,1,1,1,1);
 	c3push( 1,1,1, 1,1,1,1,1,1,1,1,1);
+
+*/
 
     // these vertex attribute indices correspond to those specified for the
     // input variables in the vertex shader
@@ -213,33 +233,66 @@ void DestroyGeometry(MyGeometry *geometry)
 }
 
 
-void push_fish(){
-	v2push(1, 1, 2, -1, 0, -1);
-	v2push(0, -1, -2, -1, -1, 1);
-	v2push(-1, 1, 0, 1, 1, 1);
-	v2push(1.2, 0.5, 2.5, 1.0, 1.3, -0.4);
-	c2push(1,1,1, 1,1,1, 1,1,1);
-	c2push(1,1,1, 1,1,1, 1,1,1);
-	c2push(1,1,1, 1,1,1, 1,1,1);
-	c2push(1,1,1, 1,1,1, 1,1,1);
-	
-}
 void push_teapot(){
-	return;
+//	c2push(1,1,1, 1,1,1, 1,1,1);
+//	v2pushc(1, 1, 2, -1, 0, -1);
+//	c2push(1,1,1, 1,1,1, 1,1,1);
+//	v2pushc(0, -1, -2, -1, -1, 1);
+//	c2push(1,1,1, 1,1,1, 1,1,1);
+//	v2pushc(-1, 1, 0, 1, 1, 1);
+//	c2push(1,1,1, 1,1,1, 1,1,1);
+//	v2pushc(1.2, 0.5, 2.5, 1.0, 1.3, -0.4);
+/*	pushcpnt(1,1);
+	pushncpnt(2,-1);
+	pushcpnt(0,-1);		
+
+	pushcpnt(0,-1);
+	pushncpnt(-2,-1);
+	pushcpnt(-1,1);
+
+	pushcpnt(-1,1);
+	pushncpnt(0,1);
+	pushcpnt(1,1);
+	
+	pushcpnt(1.2,0.5);
+	pushncpnt(2.5,1);
+	pushcpnt(1.3,-0.4); */
+}
+void push_fish(){
+/*
+    c3push(1,1,1, 1,1,1, 1,1,1, 1,1,1);
+	v3pushc(1, 1, 4, 0, 6,  2, 9, 1);
+//	printf("SUm :%d\n",sum);
+    c3push(1,1,1, 1,1,1, 1,1,1, 1,1,1);
+	v3pushc(8, 2, 0, 8, 0, -2, 8, 4);
+    c3push(1,1,1, 1,1,1, 1,1,1, 1,1,1);
+	v3pushc(5, 3, 3, 2, 3,  3, 5, 2);
+    c3push(1,1,1, 1,1,1, 1,1,1, 1,1,1);
+	v3pushc(3, 2.2, 3.5, 2.7, 3.5, 3.3, 3, 3.8);
+    c3push(1,1,1, 1,1,1, 1,1,1, 1,1,1);
+	v3pushc(2.8, 3.5, 2.4, 3.8, 2.4, 3.2, 2.8, 3.5);
+
+	*/
 }
 
 
 //LOAD SCENE TODO
 void loadscene(){
-	scene = scene % 2;	//Adjusts scene to the right size.
+	#define MAXSCENE 1
+	if (scene >= MAXSCENE)
+		scene = scene % 2;	//Adjusts scene to the right size.
+	if (scene < 0)
+		scene = MAXSCENE;
 	vertices.clear();
 	colours.clear();
 	if(scene == 1){
 		printf("Drawing fish\n");
 		push_fish();	
-	}else if (scene == 2){
+		zoom=1.f/10.f;
+	}else if (scene == 0){
 		printf("Drawing teapot\n");
 		push_teapot();
+		zoom=0.5f;
 	}
 	update_verts();
 	RenderScene(true);
