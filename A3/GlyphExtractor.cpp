@@ -35,7 +35,11 @@ GlyphExtractor::GlyphExtractor()
         cout << "ERROR: FreeType failed to initialize!" << endl;
     }
 }
-
+GlyphExtractor::~GlyphExtractor()
+{
+	FT_Done_Face(m_face);
+	FT_Done_FreeType(m_library);
+}
 // --------------------------------------------------------------------------
 
 bool GlyphExtractor::LoadFontFile(const string &filename)

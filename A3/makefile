@@ -17,7 +17,7 @@ SRC=*.cpp middleware/glad/src/glad.c
 INCLUDES=-Imiddleware/stb -Imiddleware/glad/include -Imiddleware/freetype/include
 
 # define library paths
-LFLAGS=-Lmiddleware/freetype/lib
+LFLAGS=-Lmiddleware/freetype/lib -L./
 
 # define any libraries to link into executable
 LIBS=-lfreetype `pkg-config --static --libs glfw3`

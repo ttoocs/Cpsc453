@@ -72,6 +72,7 @@ class GlyphExtractor
 
 public:
     GlyphExtractor();
+    ~GlyphExtractor();
 
     // call this method first to load a font file
     bool LoadFontFile(const std::string &filename);

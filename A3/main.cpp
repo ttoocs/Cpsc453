@@ -49,7 +49,7 @@
 #define c2push(X1,Y1,Z1,X2,Y2,Z2,X3,Y3,Z3) cpush(X1,Y1,Z1); cpush(X2,Y2,Z3); cpush(X3,Y3,Z3) ; cpush(0,0,0); cpush(2,2,2)
 #define c3push(X1,Y1,Z1,X2,Y2,Z2,X3,Y3,Z3,X4,Y4,Z4) cpush(X1,Y1,Z1); cpush(X2,Y2,Z2); cpush(X3,Y3,Z3) ; cpush(X4,Y4,Z4); cpush(3,3,3)
 
-#define pushscale 0.3f*zoom
+#define pushscale  0.03f/zoom //0.3f/zoom
 
 #define pushplus(X,Y,A,B,C) v1push(X+pushscale,Y , X-pushscale,Y); v1push(X,Y+pushscale,X,Y-pushscale); c1push(A,B,C,A,B,C); c1push(A,B,C,A,B,C)
 #define pushcpnt(X,Y) pushplus(X,Y,0,0.6f,0.4f);
@@ -183,9 +183,9 @@ bool InitializeGeometry(MyGeometry *geometry)
 	pushcpnt(-0.4,.5);
 	pushcpnt(0.4,.5);
 	c2push(1,1,1, 1,1,1, 1,1,1);
-	v2pushc(-.5,-.5, 0,-1, .5,-.5);
+	v2push(-.5,-.5, 0,-1, .5,-.5);
 	c2push(1,1,1, 1,1,1, 1,1,1);
-	v2pushc(-.5,-.5, 0,-0.8, .5,-.5);
+	v2push(-.5,-.5, 0,-0.8, .5,-.5);
 	
 	
 /*
@@ -270,7 +270,7 @@ void push_fish(){
 
 //LOAD SCENE TODO
 void loadscene(){
-	#define MAXSCENE 1
+	#define MAXSCENE 2
 	if (scene >= MAXSCENE)
 		scene = scene % 2;	//Adjusts scene to the right size.
 	if (scene < 0)
@@ -279,12 +279,14 @@ void loadscene(){
 	colours.clear();
 	if(scene == 1){
 		printf("Drawing fish\n");
-		push_fish();	
 		zoom=1.f/10.f;
+		push_fish();	
 	}else if (scene == 0){
 		printf("Drawing teapot\n");
-		push_teapot();
 		zoom=0.5f;
+		push_teapot();
+	}else if (scene == 2){
+		printf("Drawing \n");
 	}
 	update_verts();
 	RenderScene(true);
@@ -359,6 +361,14 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
 	if( scene != oldscene){
 		loadscene();
 	}
+	if (key == GLFW_KEY_W && action == GLFW_PRESS){
+		if(cntrl_pnts) {cntrl_pnts=false;} else {cntrl_pnts=true;}
+		loadscene();
+	}
+	if (key == GLFW_KEY_UP && action == GLFW_PRESS){
+		if(cntrl_pnts) {cntrl_pnts=false;} else {cntrl_pnts=true;}
+		loadscene();
+	}
 }
 
 void cursor_position_callback(GLFWwindow* window, double xpos, double ypos)
@@ -390,7 +400,8 @@ int main(int argc, char *argv[])
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-    window = glfwCreateWindow(512, 512, "Scott Saunders", 0, 0);
+	glfwWindowHint(GLFW_SAMPLES, 4);
+    window = glfwCreateWindow(512, 512, "Scott Saunders, A3", 0, 0);
     if (!window) {
         cout << "Program failed to create GLFW window, TERMINATING" << endl;
         glfwTerminate();
