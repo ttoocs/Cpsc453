@@ -183,9 +183,9 @@ bool InitializeGeometry(MyGeometry *geometry)
 	pushcpnt(-0.4,.5);
 	pushcpnt(0.4,.5);
 	c2push(1,1,1, 1,1,1, 1,1,1);
-	v2push(-.5,-.5, 0,-1, .5,-.5);
+	v2pushc(-.5,-.5, 0,-1, .5,-.5);
 	c2push(1,1,1, 1,1,1, 1,1,1);
-	v2push(-.5,-.5, 0,-0.8, .5,-.5);
+	v2pushc(-.5,-.5, 0,-0.8, .5,-.5);
 	
 	
 /*
