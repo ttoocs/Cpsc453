@@ -17,6 +17,9 @@
 #include <algorithm>
 #include <vector>
 
+#include "GlyphExtractor.h"
+
+
 // specify that we want the OpenGL core profile before including GLFW headers
 #define GLFW_INCLUDE_GLCOREARB
 #define GL_GLEXT_PROTOTYPES
@@ -63,13 +66,15 @@ double mouse_y;
 int width;
 int height;
 int scene=0;
-int sum; 
+float scrollspeed=0.00f;
 
 bool cntrl_pnts=true;
 
 GLint mouse_coord_uniform;
 GLint width_uniform;
 GLint height_uniform;
+
+string font="";
 
 vector<GLfloat> vertices;
 vector<GLfloat> colours;
@@ -267,26 +272,114 @@ void push_fish(){
 	v3pushc(2.8, 3.5, 2.4, 3.8, 2.4, 3.2, 2.8, 3.5);
 }
 
+GlyphExtractor extractor;
+MyGlyph glyph;
+MyContour contour;
+MySegment segment;
+string str_ng;
+GLfloat adv;
+void fontstuff(){
+	extractor.LoadFontFile(font);
+	adv=0;
+	for(int i =0; i<str_ng.length(); i++){
+		char c = str_ng[i];
+		glyph = extractor.ExtractGlyph(c);
+		for(int j =0; j<glyph.contours.size(); j++){
+			contour = glyph.contours[j];
+			for(int k=0; k<contour.size(); k++){
+				segment = contour[k];
+				switch(segment.degree){
+					case 1:	{//LINEAR
+							c1push(1,1,1, 1,1,1);
+							v1pushc(segment.x[0]+adv,segment.y[0], segment.x[1]+adv,segment.y[1]);
+							break;
+					}
+					case 2: {//QUADRATIC
+							c2push(1,1,1, 1,1,1, 1,1,1);
+							v2pushc(segment.x[0]+adv,segment.y[0], segment.x[1]+adv,segment.y[1], segment.x[2]+adv,segment.y[2]);
+							break;
+					}
+					case 3: {//CUBIC
+							c3push(1,1,1, 1,1,1, 1,1,1, 1,1,1);
+							v3pushc(segment.x[0]+adv,segment.y[0], segment.x[1]+adv,segment.y[1], segment.x[2]+adv,segment.y[2], segment.x[3]+adv,segment.y[3]);
+							break;
+					}
+					default: {
+							printf("TOO MANY DEGREES FOR SEGMENT %d,%d,%d,%d,%c,%s \n",segment.degree,k,j,i,c,str_ng);
+							break;
+					}
+				}
+			}
+			
+		}
+		adv += glyph.advance;
+	}
+}
 
 //LOAD SCENE TODO
 void loadscene(){
-	#define MAXSCENE 2
-	if (scene >= MAXSCENE)
+	#define MAXSCENE 6
+	if (scene > MAXSCENE)
 		scene = scene % 2;	//Adjusts scene to the right size.
 	if (scene < 0)
 		scene = MAXSCENE;
 	vertices.clear();
 	colours.clear();
+	scrollspeed=0;
 	if(scene == 1){
 		printf("Drawing fish\n");
 		zoom=1.f/10.f;
-		push_fish();	
+		push_fish();
+		offset[0] = 0;              //2D offset vector
+		offset[1] = 0;
 	}else if (scene == 0){
 		printf("Drawing teapot\n");
 		zoom=0.5f;
 		push_teapot();
+		offset[0] = 0;              //2D offset vector
+		offset[1] = 0;
 	}else if (scene == 2){
-		printf("Drawing \n");
+		printf("Font Lora \n");
+		zoom=0.25f;
+		font="fonts/Lora-Regular.ttf";
+		str_ng="Scott Saunders.";
+		fontstuff();	
+		offset[0] = -3.25f;              //2D offset vector
+		offset[1] = -0.25f;
+	}else if (scene == 3){
+		printf("Font Source Sans Pro\n");
+		zoom=0.25f;
+		font="fonts/SourceSansPro-Regular.otf";
+		str_ng="Scott Saunders.";
+		fontstuff();	
+		offset[0] = -3.25f;              //2D offset vector
+		offset[1] = -0.25f;
+	}else if (scene == 4){
+		printf("Font Leafy Glade\n");
+		zoom=0.30f;
+		font="fonts/Leafy-Glade.ttf";
+		str_ng="Scott Saunders.";
+		fontstuff();	
+		offset[0] = -3.25f;              //2D offset vector
+		offset[1] = -0.25f;
+	}else if (scene == 5){
+		printf("Font Alex Brush\n");
+		zoom=0.5f;
+		font="fonts/AlexBrush-Regular.ttf";
+		str_ng="The quick brown fox jumps over the lazy dog.";
+		fontstuff();	
+		offset[0] = zoom*4;              //2D offset vector
+		offset[1] = -0.25f;
+		scrollspeed = 0.025f;
+	}else if (scene == 6){
+		printf("Inconsolata\n");
+		zoom=0.5f;
+		font="fonts/Inconsolata.otf";
+		str_ng="The quick brown fox jumps over the lazy dog.";
+		fontstuff();	
+		offset[0] = zoom*4;              //2D offset vector
+		offset[1] = -0.25f;
+		scrollspeed = 0.025f;
 	}
 	update_verts();
 	RenderScene(true);
@@ -294,7 +387,16 @@ void loadscene(){
 }
 
 
-
+void scroll(){
+	offset[0] -= scrollspeed;
+	int maxoff = str_ng.length()/1;
+	if(scene == 0 || scene == 1)
+		maxoff = 10;
+	if(offset[0] < -maxoff)
+		offset[0] = 1.f*1/zoom;
+	if(offset[0] > 1.f*1/zoom)
+		offset[0] = -maxoff;
+}
 // --------------------------------------------------------------------------
 // Rendering function that draws our scene to the frame buffer
 
@@ -369,6 +471,12 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
 		if(cntrl_pnts) {cntrl_pnts=false;} else {cntrl_pnts=true;}
 		loadscene();
 	}
+	if (key == GLFW_KEY_Q) {
+		scrollspeed += 0.01f;
+	}
+	if (key == GLFW_KEY_E) {
+		scrollspeed -= 0.01f;
+	}
 }
 
 void cursor_position_callback(GLFWwindow* window, double xpos, double ypos)
@@ -379,7 +487,7 @@ void cursor_position_callback(GLFWwindow* window, double xpos, double ypos)
   mouse_x=xpos/width;
   mouse_y=(1-(ypos/height));
 
-  std::cout << "Mouse Position (" << mouse_x << ", " << mouse_y << ")" << std::endl;
+//  std::cout << "Mouse Position (" << mouse_x << ", " << mouse_y << ")" << std::endl;
 }
 
 // ==========================================================================
@@ -436,13 +544,16 @@ int main(int argc, char *argv[])
     while (!glfwWindowShouldClose(window))
     {
         // call function to draw our scene
+        scroll();
         RenderScene(true);
 
         // scene is rendered to the back buffer, so swap to front for display
         glfwSwapBuffers(window);
 
+		
         // sleep until next event before drawing again
-        glfwWaitEvents();
+        glfwPollEvents();
+		
     }
 
     // clean up allocated resources before exit
