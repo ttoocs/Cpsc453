@@ -319,10 +319,12 @@ void fontstuff(){
 //LOAD SCENE TODO
 void loadscene(){
 	#define MAXSCENE 6
+//	printf("Scene pre: %d ",scene);
 	if (scene > MAXSCENE)
-		scene = scene % 2;	//Adjusts scene to the right size.
-	if (scene < 0)
+		scene = 0;	
+	else if (scene < 0)
 		scene = MAXSCENE;
+//	printf("Scene pos: %d \n",scene);	
 	vertices.clear();
 	colours.clear();
 	scrollspeed=0;
@@ -332,12 +334,14 @@ void loadscene(){
 		push_fish();
 		offset[0] = 0;              //2D offset vector
 		offset[1] = 0;
+		adv=1;
 	}else if (scene == 0){
 		printf("Drawing teapot\n");
 		zoom=0.5f;
 		push_teapot();
 		offset[0] = 0;              //2D offset vector
 		offset[1] = 0;
+		adv=1;
 	}else if (scene == 2){
 		printf("Font Lora \n");
 		zoom=0.25f;
@@ -389,13 +393,11 @@ void loadscene(){
 
 void scroll(){
 	offset[0] -= scrollspeed;
-	int maxoff = str_ng.length()/1;
-	if(scene == 0 || scene == 1)
-		maxoff = 10;
-	if(offset[0] < -maxoff)
-		offset[0] = 1.f*1/zoom;
-	if(offset[0] > 1.f*1/zoom)
-		offset[0] = -maxoff;
+	if(offset[0] < -adv -2/zoom)
+		offset[0] = 2/zoom;
+	if(offset[0] > 2/zoom)
+		offset[0] = -adv -2/zoom;
+	//printf("Offset : %f\n",offset[0]);
 }
 // --------------------------------------------------------------------------
 // Rendering function that draws our scene to the frame buffer
