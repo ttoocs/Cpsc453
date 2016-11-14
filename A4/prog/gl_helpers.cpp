@@ -6,7 +6,18 @@
 
 using namespace std;
 
+
+// reports GLFW errors
+void ErrorCallback(int error, const char* description)
+ {
+     cout << "GLFW ERROR " << error << ":" << endl;
+     cout << description << endl;
+ }
+
+
+
 GLFWwindow * glfw_init(int X, int Y, char const * Title){  //Initalizes and returns a GLFW window.
+    glfwSetErrorCallback(ErrorCallback);
 	
 	glfwInit();
 
@@ -78,15 +89,10 @@ GLuint CompileShader(GLenum shaderType, const string &source)
 
     return shaderObject;
 }
-// creates and returns a program object linked from vertex and fragment shaders
-GLuint LinkProgram(GLuint vertexShader, GLuint fragmentShader)
+//  linked from vertex and fragment shaders
+GLuint LinkProgram(GLuint programObject)
 {
-    // allocate program object name
-    GLuint programObject = glCreateProgram();
 
-    // attach provided shader objects to this program
-    if (vertexShader)   glAttachShader(programObject, vertexShader);
-    if (fragmentShader) glAttachShader(programObject, fragmentShader);
 
     // try linking the program with given attachments
     glLinkProgram(programObject);
