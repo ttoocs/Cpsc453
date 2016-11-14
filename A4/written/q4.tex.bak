@@ -1,0 +1,16 @@
+\begin{itemize}
+
+\item A:
+View ray: The ray being projected out of the camera/eye, Used to find secondary rays. (Goes to inifinity, check for intercepts, the closest intercept is the incidence of a secondary ray). \\
+Shadow ray: A secondary ray, between where view-ray hit and a light-source. If there is an intersection (ie, an object in the way of the light) it should be rendered have a darker colour. (ie, $c = c / darkfactor $, $darkfactor \propto 1/number of light sources$, this being applied after the reflected rays are calculated. (Alternativly: incorperate this value into the reflected ray's calculations)). \\
+
+\item B:
+View ray: Same as above. \\
+Reflected ray: A secondary ray, but generates a new pseudo-camera ray which returns a colour which will be incorperated into this ones colour $(c_r(c_a + c_l max (0, \hat n \cdot \hat l ) ) + c_l c_p (\hat h \cdot \hat n)^p$. (You could permit more recursion, but it should be limited.)
+
+
+%Reflected ray: A secondary ray, but with 
+%\indent 1: Reflection : This generates a new pseudo-camera ray, returning a colour incorperated into this ones colour. $c_r(c_a + c_l max (0, \hat(n) \cdot \hat(l) ) )$
+%\indent 2: Diffusion : A diffused reflection, which also has a pseudo-camera ray$c_l c_p (\hat(h) \cdot \hat(n))^p$
+%
+\end{itemize}

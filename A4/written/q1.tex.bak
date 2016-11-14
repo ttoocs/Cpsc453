@@ -1,0 +1,12 @@
+\begin{itemize}
+
+\item A: \\
+\includegraphics[scale=0.33]{fov} \\
+
+Where $\theta$ is $60/2 = 30$ degrees, $a=1$ (arbitrary), and we need the offset $(o)$. By trig: $\tan(30)*a = o = 1/\sqrt(3) $. As this is only one direction, we need to do it in another, which is the exact same degree.
+This gives us a vector $[-1/\sqrt(3), 1/\sqrt(3), -1]$ . When normalized, this gives us the vector $[-1/\sqrt(5), 1/\sqrt(5), -\sqrt(3/5)]$
+
+\item B: \\
+	Yes, however, the resolution/information contained will be less. To do this, you crop from the center so you only have $46x46$ pixels (Alternatively, you keep the image the same size, while "zooming" in by $2.1547$, and doing some interplation.) Note: It is important to realize that there is a loss of information. (IE, not possible to get a perfect sub-render, unless we over-sampled the in the original render and kept that information somewhere).
+
+\end{itemize}
