@@ -1,6 +1,7 @@
 #version 430
-#layout(local_size_x = 1, local_size_y = 1) in;
-#layout(rgba32f, binding = 0) uniform image2D img_output;	
+
+// layout(local_size_x = 1, local_size_y = 1) in;
+// layout(rgba32f, binding = 0) uniform image2D img_output;	
 
 /*
 Compute shader variables:
@@ -13,6 +14,23 @@ uint 	gl_LocalInvocationID
 
 
 */
+
+int ray_intersect_tri(uint obj){
+	return 0;
+}
+int ray_intersect_sphere(uint obj){
+	return 0;
+}
+int ray_intersect_plane(uint obj){
+	return 0;
+}
+int ray_intersect_point(uint obj){
+	return 0;
+}
+
+// unifrom float objets[];
+
+
 void main(){
   // base pixel colour for image
   vec4 pixel = vec4(0.0, 1.0, 1.0, 1.0);

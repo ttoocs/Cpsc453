@@ -52,6 +52,7 @@ GLSTUFF glstuff;
 
 #define MAX_SCENE 2
 void changeScene(){
+	
 	if(scene > MAX_SCENE)
 		scene = 0;
 	if(scene < MAX_SCENE )
@@ -68,8 +69,8 @@ void changeScene(){
 		initalized=true;
 		glstuff.prog = glCreateProgram();
 		glstuff.vertexShader = CompileShader(GL_VERTEX_SHADER,LoadSource("vertex.glsl"));
-		glstuff.fragShader = CompileShader(GL_FRAGMENT_SHADER,LoadSource("vertex.glsl"));
-		//glstuff.compShader = CompileShader(GL_COMPUTE_SHADER,LoadSource("vertex.glsl"));
+		glstuff.fragShader = CompileShader(GL_FRAGMENT_SHADER,LoadSource("fragment.glsl"));
+		//glstuff.compShader = CompileShader(GL_COMPUTE_SHADER,LoadSource("compute.glsl"));
 			
 		glAttachShader(glstuff.prog, glstuff.vertexShader);
 		glAttachShader(glstuff.prog, glstuff.fragShader);
@@ -78,7 +79,6 @@ void changeScene(){
 		//Attrib things here
 
 //		cout << "Nuggets" << endl;	//I have no idea why I need to print something out here.
-
 		LinkProgram(glstuff.prog);
 		
 		//Vertex stuffs
@@ -101,6 +101,7 @@ void changeScene(){
 	
 		//Push square
 		
+		glBindVertexArray(glstuff.vertexarray);
 		glBindBuffer(GL_ARRAY_BUFFER, glstuff.vertexbuffer);
 		glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
@@ -108,7 +109,6 @@ void changeScene(){
 		
     	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	    glBindVertexArray(0);
-	
 	}
 
 		//Update stuff
@@ -138,12 +138,13 @@ void Render(){
 	glClear(GL_COLOR_BUFFER_BIT);
 
 	glUseProgram(glstuff.prog);
-	glEnableVertexAttribArray(0);
+	glBindVertexArray(glstuff.vertexarray);
 	glDrawArrays(GL_TRIANGLE_STRIP,0,4);
+
 	return;
 }
 int main(int argc, char * argv[]){
-	changeScene();	//Load up a scene!
+
 
 	GLFWwindow * window = glfw_init(WIDTH,HEIGHT,"Scott Saunders - Assignment 4");	//Init window.
 
@@ -151,12 +152,14 @@ int main(int argc, char * argv[]){
 	glEnable(GL_DEBUG_OUTPUT);								//DEBUG :D
 	glEnable( GL_DEBUG_OUTPUT_SYNCHRONOUS);	
 
-	while(!glfwWindowShouldClose(window)){ //Main loop.
+	changeScene();	//Load up a scene!
+
 		Render();
+
+	while(!glfwWindowShouldClose(window)){ //Main loop.
     	glfwSwapBuffers(window);
 		glfwPollEvents();
 	}
 	
 	glfwTerminate();	//Kill the glfw interface
-
 }

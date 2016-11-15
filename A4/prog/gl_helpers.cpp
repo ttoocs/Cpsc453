@@ -7,7 +7,7 @@
 using namespace std;
 
 
-#define lcase(X)	case(X): cout << " X " << endl; break;
+#define lcase(X)	case(X): cout << #X << endl; break;
 
 
 // reports GLFW errors
@@ -110,7 +110,7 @@ string LoadSource(const string &filename)
         cout << "ERROR: Could not load shader source from file "
             << filename << endl;
     }
-
+//	cout << "RAW READ: " << source << " : END READ" << endl;
     return source;
 }
 
@@ -194,23 +194,40 @@ void GL_error_callback(GLenum source, GLenum type, GLuint id,
    GLenum severity, GLsizei length, const GLchar* message, const void* userParam)
 	{
 	cout << "GL ERROR CALLBACK: " << endl;
-	cout << "Source: " << source << endl;
-/*	switch (source){
-		lcase(DEBUG_SOURCE_API)
-		lcase(DEBUG_SOURCE_WINDOW_SYSTEM)
-		lcase(DEBUG_SOURCE_SHADER_COMPILER)
-		lcase(DEBUG_SOURCE_THIRD_PARTY)
-		lcase(DEBUG_SOURCE_APPLICATION)
-		lcase(DEBUG_SOURCE_OTHER)
-	} */
+	cout << "Source: " << source << " : ";
+	switch (source){
+		lcase(GL_DEBUG_SOURCE_API)
+		lcase(GL_DEBUG_SOURCE_WINDOW_SYSTEM)
+		lcase(GL_DEBUG_SOURCE_SHADER_COMPILER)
+		lcase(GL_DEBUG_SOURCE_THIRD_PARTY)
+		lcase(GL_DEBUG_SOURCE_APPLICATION)
+		lcase(GL_DEBUG_SOURCE_OTHER)				//THESE ARN'T DEFINED?
+	}  
 
-	cout << type << endl;
+	cout << "Type: " <<  type << " : ";
+	switch (type){
+		lcase(GL_DEBUG_TYPE_ERROR)
+		lcase(GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR)
+		lcase(GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR)
+		lcase(GL_DEBUG_TYPE_PORTABILITY)
+		lcase(GL_DEBUG_TYPE_PERFORMANCE)
+		lcase(GL_DEBUG_TYPE_MARKER)
+		lcase(GL_DEBUG_TYPE_PUSH_GROUP)
+		lcase(GL_DEBUG_TYPE_POP_GROUP)
+		lcase(GL_DEBUG_TYPE_OTHER)
+	}
 		
-	cout << id << endl;
-	cout << severity << endl;
-	cout << length << endl;
-	cout << message << endl;
-	cout << userParam << endl;
+	cout << "ID: " << id << endl;
+	cout << "Serverity: " << severity << " : ";
+	switch (severity){
+		lcase(GL_DEBUG_SEVERITY_HIGH)
+		lcase(GL_DEBUG_SEVERITY_MEDIUM)
+		lcase(GL_DEBUG_SEVERITY_LOW)
+		lcase(GL_DEBUG_SEVERITY_NOTIFICATION)
+	}
+	cout << "Length: " << length << endl;
+	cout << "Message: " << message << endl;
+	cout << "UserParam: " << userParam << endl;
 	cout << "END: GL ERROR CALLBACK: " << endl;
 
 }
