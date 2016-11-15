@@ -10,7 +10,7 @@
 // location indices for these attributes correspond to those specified in the
 // InitializeGeometry() function of the main program
 layout(location = 0) in vec2 VertexPosition;
-layout(location = 1) in vec2 VertexUV
+layout(location = 1) in vec3 VertexColour;
 
 // output to be interpolated between vertices and passed to the fragment stage
 out vec2 uv;

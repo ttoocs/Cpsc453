@@ -7,6 +7,9 @@
 using namespace std;
 
 
+#define lcase(X)	case(X): cout << " X " << endl; break;
+
+
 // reports GLFW errors
 void ErrorCallback(int error, const char* description)
  {
@@ -184,8 +187,8 @@ void check_gllink(GLuint programObject){
 
 
 
-#define lcase(X)	case(X): cout << " X " << endl; break;
 
+// https://www.opengl.org/wiki/Debug_Output#Getting_messages //
 
 void GL_error_callback(GLenum source, GLenum type, GLuint id,
    GLenum severity, GLsizei length, const GLchar* message, const void* userParam)
