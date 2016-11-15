@@ -7,13 +7,14 @@
 #version 410
 
 // interpolated colour received from vertex stage
-// in vec3 Colour;
-in vec2 coords;
+
+in vec2 uv;
+
 
 // first output is mapped to the framebuffer's colour index by default
 out vec4 FragmentColour;
 
-uniform sampler2DRect image;
+uniform sampler2D image;
 
 
 
@@ -28,6 +29,7 @@ void main(void)
 //    vec4 colour = texture(tex, newCoords);
 
 
-	vec4 colour = texture(image,coords);
+//	vec4 colour = texture(image,uv);
+	vec4 colour = vec4(1,1,1,0);
     FragmentColour = colour;
 }

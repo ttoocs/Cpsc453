@@ -16,6 +16,55 @@ void ErrorCallback(int error, const char* description)
 
 
 
+
+
+
+void check_glerror(){
+	GLenum error = (glGetError());
+	switch (error){
+		case(GL_NO_ERROR) :
+		default :
+//			cout << GL_NO_ERROR << ":" << error << endl;
+			return;
+		case(GL_INVALID_ENUM):
+			cout << "GL_INVALID_ENUM" << endl;
+			break;
+		case(GL_INVALID_VALUE):
+			cout << "GL_INVALID_VALUE" << endl;
+			break;
+		case(GL_INVALID_OPERATION):
+			cout << "GL_INVALID_OPERATION" << endl;
+			break;
+		case(GL_INVALID_FRAMEBUFFER_OPERATION):
+			cout << "GL_INVALID_FRAMEBUFFER_OPERATION" << endl;
+			break;
+		case(GL_OUT_OF_MEMORY):
+			cout << "GL_OUT_OF_MEMORY" << endl;
+			break;
+		case(GL_STACK_UNDERFLOW):
+			cout << "GL_STACK_UNDERFLOW" << endl;
+			break;
+		case(GL_STACK_OVERFLOW):
+			cout << "GL_STACK_OVERFLOW" <<endl;
+			break;
+	}
+}
+
+void check_compile(GLuint vertexShader){
+	    GLint isCompiled = 0;
+        glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &isCompiled);
+        if(isCompiled == GL_FALSE)
+        {
+        GLint maxLength = 0;
+        glGetShaderiv(vertexShader, GL_INFO_LOG_LENGTH, &maxLength);
+		std::string infoLog(maxLength, ' ');
+        glGetShaderInfoLog(vertexShader, maxLength, &maxLength, &infoLog[0]);
+        cout << infoLog << endl;
+        return;
+        }
+	
+}
+
 GLFWwindow * glfw_init(int X, int Y, char const * Title){  //Initalizes and returns a GLFW window.
     glfwSetErrorCallback(ErrorCallback);
 	
@@ -89,6 +138,7 @@ GLuint CompileShader(GLenum shaderType, const string &source)
 
     return shaderObject;
 }
+
 //  linked from vertex and fragment shaders
 GLuint LinkProgram(GLuint programObject)
 {
@@ -113,4 +163,51 @@ GLuint LinkProgram(GLuint programObject)
     return programObject;
 }
 
+void check_gllink(GLuint programObject){
+    GLint status;
+    glGetProgramiv(programObject, GL_LINK_STATUS, &status);
+    if (status == GL_FALSE)
+    {
+        GLint length;
+        glGetProgramiv(programObject, GL_INFO_LOG_LENGTH, &length);
+        string info(length, ' ');
+        glGetProgramInfoLog(programObject, info.length(), &length, &info[0]);
+        cout << "ERROR linking program:" << endl;
+        cout << info << endl;
+		exit(32);
+    }
+}
 
+
+
+
+
+
+
+#define lcase(X)	case(X): cout << " X " << endl; break;
+
+
+void GL_error_callback(GLenum source, GLenum type, GLuint id,
+   GLenum severity, GLsizei length, const GLchar* message, const void* userParam)
+	{
+	cout << "GL ERROR CALLBACK: " << endl;
+	cout << "Source: " << source << endl;
+/*	switch (source){
+		lcase(DEBUG_SOURCE_API)
+		lcase(DEBUG_SOURCE_WINDOW_SYSTEM)
+		lcase(DEBUG_SOURCE_SHADER_COMPILER)
+		lcase(DEBUG_SOURCE_THIRD_PARTY)
+		lcase(DEBUG_SOURCE_APPLICATION)
+		lcase(DEBUG_SOURCE_OTHER)
+	} */
+
+	cout << type << endl;
+		
+	cout << id << endl;
+	cout << severity << endl;
+	cout << length << endl;
+	cout << message << endl;
+	cout << userParam << endl;
+	cout << "END: GL ERROR CALLBACK: " << endl;
+
+}
