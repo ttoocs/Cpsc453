@@ -193,6 +193,8 @@ void check_gllink(GLuint programObject){
 void GL_error_callback(GLenum source, GLenum type, GLuint id,
    GLenum severity, GLsizei length, const GLchar* message, const void* userParam)
 	{
+	if( true && severity != GL_DEBUG_SEVERITY_NOTIFICATION){
+
 	cout << "GL ERROR CALLBACK: " << endl;
 	cout << "Source: " << source << " : ";
 	switch (source){
@@ -230,4 +232,5 @@ void GL_error_callback(GLenum source, GLenum type, GLuint id,
 	cout << "UserParam: " << userParam << endl;
 	cout << "END: GL ERROR CALLBACK: " << endl;
 
+	}
 }

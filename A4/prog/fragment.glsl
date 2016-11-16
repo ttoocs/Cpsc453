@@ -10,26 +10,31 @@
 
 in vec2 uv;
 
-
 // first output is mapped to the framebuffer's colour index by default
 out vec4 FragmentColour;
 
-//uniform sampler2D image;
-
-
+uniform ivec2 dimentions;
+uniform sampler2D image;
 
 void main(void)
 {
-    //float res = 0.001f;
-    //vec2 newCoords;
-    //newCoords.x = res * (int(textureCoords.x)/res);
-    //newCoords.y = res * (int(textureCoords.y)/res);
-
-    // write colour output without modification
-//    vec4 colour = texture(tex, newCoords);
+	vec4 colour;
+	vec2 coord = uv;
 
 
-//	vec4 colour = texture(image,uv);
-	vec4 colour = vec4(1,1,1,0);
+//	coord.x /= dimentions.x;
+//	coord.y /= dimentions.y;
+
+//	coord.x = coord.x + 1f;
+//	coord.y = coord.y + 1f;
+
+
+//	coord.x /= 2;
+//	coord.y /= 2;
+
+//	colour = texture(image,uv);
+	colour = texture(image,coord);
+	
+//	colour = vec4(abs(uv),0,1);
     FragmentColour = colour;
 }

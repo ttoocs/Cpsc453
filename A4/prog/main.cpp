@@ -8,7 +8,6 @@
 
 #include <GLFW/glfw3.h>
 #include <unistd.h>
-#include <stdio.h>
 
 #include <iostream>
 #include <fstream>
@@ -18,7 +17,8 @@
 #include <iterator>
 #include <sstream>
 
-#include <stdlib.h> 
+#include <stdio.h>
+#include <stdlib.h>
 
 #include "gl_helpers.cpp"
 #include "parser.cpp"
@@ -41,9 +41,11 @@ struct GLSTUFF{
 	GLuint vertexbuffer;
 	GLuint vertexarray;
 	GLuint prog;
+	GLuint cprog;
 	GLuint vertexShader;
 	GLuint fragShader;
 	GLuint compShader;
+	GLuint tex_output;
 	
 };
 GLSTUFF glstuff;
@@ -70,19 +72,24 @@ void changeScene(){
 		glstuff.prog = glCreateProgram();
 		glstuff.vertexShader = CompileShader(GL_VERTEX_SHADER,LoadSource("vertex.glsl"));
 		glstuff.fragShader = CompileShader(GL_FRAGMENT_SHADER,LoadSource("fragment.glsl"));
-		//glstuff.compShader = CompileShader(GL_COMPUTE_SHADER,LoadSource("compute.glsl"));
+
+		glstuff.cprog = glCreateProgram();
+		glstuff.compShader = CompileShader(GL_COMPUTE_SHADER,LoadSource("compute.glsl"));
 			
 		glAttachShader(glstuff.prog, glstuff.vertexShader);
 		glAttachShader(glstuff.prog, glstuff.fragShader);
-		//glAttachShader(glstuff.prog, glstuff.compShader);
+		glAttachShader(glstuff.cprog, glstuff.compShader);
 
 		//Attrib things here
 
 //		cout << "Nuggets" << endl;	//I have no idea why I need to print something out here.
-		LinkProgram(glstuff.prog);
-		
+		glLinkProgram(glstuff.prog);
+		check_gllink(glstuff.prog);
+		glLinkProgram(glstuff.cprog);
+		check_gllink(glstuff.cprog);
 		//Vertex stuffs
 
+		glUseProgram(glstuff.prog);
 		glGenBuffers(1, &glstuff.vertexbuffer);
 		glGenVertexArrays(1, &glstuff.vertexarray);
 		
@@ -104,11 +111,29 @@ void changeScene(){
 		glBindVertexArray(glstuff.vertexarray);
 		glBindBuffer(GL_ARRAY_BUFFER, glstuff.vertexbuffer);
 		glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+    	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	    glBindVertexArray(0);
 
 		//Texture stuff
 		
-    	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	    glBindVertexArray(0);
+		float color[] = { 1.0f, 0.0f, 0.0f, 1.0f };
+		glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, color);
+
+		glGenTextures(1, &glstuff.tex_output);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, glstuff.tex_output);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER );//GL_REPEAT ); //GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER );// GL_REPEAT ); //GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, WIDTH, HEIGHT, 0, GL_RGBA, GL_FLOAT, NULL);
+		glBindImageTexture(0, glstuff.tex_output, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
+		
+
+		GLuint tmp = glGetUniformLocation(glstuff.prog,"dimentions");
+		glUniform2i(tmp,WIDTH,HEIGHT);
+		
+		
 	}
 
 		//Update stuff
@@ -132,19 +157,46 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
 
 }
 
+unsigned char *pixels;
+
+void to_ppm(){
+	glGetTextureImage(glstuff.tex_output,0,GL_RGBA,GL_UNSIGNED_BYTE,WIDTH*HEIGHT*4,&pixels);
+	FILE * out =fopen("out.ppm","wt");
+	fprintf(out,"P3\n");
+	fprintf(out,"%d  %d\n255\n",WIDTH,HEIGHT);
+	int k=0;
+	for(int i =0; i < HEIGHT ; i++){
+		for(int j = 0; j < WIDTH ; j++){
+			fprintf(out," %u %u %u ",(unsigned int)pixels[k],(unsigned int)pixels[k+1], (unsigned int)pixels[k+2]);
+			k+=3;
+		}
+		fprintf(out,"\n");
+	}
+	exit(1);
+}
 
 void Render(){
+	glUseProgram(glstuff.cprog);
+	glDispatchCompute((GLuint)WIDTH, (GLuint)HEIGHT, 1);
+
+	glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+
+//	to_ppm();	 //Causes segfault
+	
 	glClearColor(0.2, 0.2, 0.2, 1.0);
 	glClear(GL_COLOR_BUFFER_BIT);
 
 	glUseProgram(glstuff.prog);
 	glBindVertexArray(glstuff.vertexarray);
+	glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, glstuff.tex_output);
 	glDrawArrays(GL_TRIANGLE_STRIP,0,4);
 
 	return;
 }
 int main(int argc, char * argv[]){
 
+	pixels = (unsigned char*)malloc(WIDTH*HEIGHT*32);
 
 	GLFWwindow * window = glfw_init(WIDTH,HEIGHT,"Scott Saunders - Assignment 4");	//Init window.
 
@@ -154,9 +206,9 @@ int main(int argc, char * argv[]){
 
 	changeScene();	//Load up a scene!
 
-		Render();
 
 	while(!glfwWindowShouldClose(window)){ //Main loop.
+		Render();
     	glfwSwapBuffers(window);
 		glfwPollEvents();
 	}

@@ -22,6 +22,6 @@ void main()
     gl_Position = vec4(VertexPosition, 0.0, 1.0);
 
     // assign output colour to be interpolated
-//    uv = VertexUV;
-	uv=vec2(0,0);
+    uv = VertexPosition;
+	//uv=vec2(0,0);
 }
