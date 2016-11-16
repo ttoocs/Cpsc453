@@ -157,29 +157,29 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
 
 }
 
-GLfloat *pixels;
+char *pixels;
 
 void to_ppm(){
 	if(pixels != NULL)
 		free(pixels);
-	pixels = (GLfloat *) malloc(WIDTH*HEIGHT*sizeof(GLint)*4);
+	pixels = (char *) malloc(WIDTH*HEIGHT*sizeof(char)*4);
 	
 	glActiveTexture(GL_TEXTURE0);
-	glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_INT, pixels);
+	glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_BYTE, pixels);
 //	glGetTextureImage(glstuff.tex_output,0,GL_RGBA,GL_UNSIGNED_BYTE,WIDTH*HEIGHT*4,&pixels);
 	FILE * out =fopen("out.ppm","wt");
 	fprintf(out,"P3\n");
-	fprintf(out,"%d  %d\n255\n",WIDTH,HEIGHT);
+	fprintf(out,"%d %d\n %d \n",WIDTH,HEIGHT,127);
 	int k=0;
 	for(int i =0; i < HEIGHT ; i++){
 		for(int j = 0; j < WIDTH ; j++){
 			fprintf(out," %d %d %d ", pixels[k], pixels[k+1], pixels[k+2]);
-			k+=3; //4 due to alpha.
+			k+=4; //4 due to alpha.
 		}
 		fprintf(out,"\n");
 	}
 	fclose(out);
-	exit(1);
+//	exit(1);
 }
 
 void Render(){
@@ -188,7 +188,6 @@ void Render(){
 
 	glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 
-	to_ppm();	 //Causes segfault
 	
 	glClearColor(0.2, 0.2, 0.2, 1.0);
 	glClear(GL_COLOR_BUFFER_BIT);
@@ -198,6 +197,8 @@ void Render(){
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, glstuff.tex_output);
 	glDrawArrays(GL_TRIANGLE_STRIP,0,4);
+	
+	to_ppm();	 
 
 	return;
 }
@@ -212,10 +213,10 @@ int main(int argc, char * argv[]){
 
 	changeScene();	//Load up a scene!
 
+	Render();
 
 	while(!glfwWindowShouldClose(window)){ //Main loop.
-		Render();
-    	glfwSwapBuffers(window);
+    		glfwSwapBuffers(window);
 		glfwPollEvents();
 	}
 	

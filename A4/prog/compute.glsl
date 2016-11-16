@@ -41,17 +41,19 @@ void main(){
   	ivec2 pixel_coords = ivec2(gl_GlobalInvocationID.xy);
 
 //	vec2 coords = vec2(gl_GlobalInvocationID.xy*2 - 512) /512;
-	vec2 coords = vec2(gl_GlobalInvocationID.xy);
+	vec2 coords = vec2(gl_GlobalInvocationID.xy)/256;
+	coords = coords + vec2(-1);
 	
-	//colour += vec4(coords,0,0);
+	colour += vec4(abs(coords),0,0);
 
 	if(coords.x == 0 ) { colour = vec4(0,0,1,0);}
-	if(coords.y == 0 ) { colour = vec4(0,0,1,1);}
+	if(coords.y == 0 ) { colour = vec4(0,0,1,0);}
 //	if(coords.x == 256 ) { colour = vec4(1,0,1,1);}
 //	if(coords.y > 0 ) { colour += vec4(0,1,0,1);}
 	
 
-	colour = vec4(0.2);
+//	colour = vec4(1,1,1,0);
+//	colour = vec4(1);
 //	ivec2	offset=ivec2(-1,-1);
   	imageStore(img_output, pixel_coords, colour);
 }

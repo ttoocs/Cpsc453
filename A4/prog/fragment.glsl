@@ -25,12 +25,12 @@ void main(void)
 //	coord.x /= dimentions.x;
 //	coord.y /= dimentions.y;
 
-//	coord.x = coord.x + 1f;
-//	coord.y = coord.y + 1f;
+	coord.x = coord.x + 1f;
+	coord.y = coord.y + 1f;
 
 
-//	coord.x /= 2;
-//	coord.y /= 2;
+	coord.x /= 2;
+	coord.y /= 2;
 
 //	colour = texture(image,uv);
 	colour = texture(image,coord);
