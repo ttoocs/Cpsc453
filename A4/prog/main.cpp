@@ -119,16 +119,16 @@ void changeScene(){
 		float color[] = { 1.0f, 0.0f, 0.0f, 1.0f };
 		glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, color);
 
-		glGenTextures(1, &glstuff.tex_output);
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, glstuff.tex_output);
+		glGenTextures(1, &glstuff.tex_output);	//tex.output is refrance to an array
+		glActiveTexture(GL_TEXTURE0);		// ??? Makes the 0th texture active...
+		glBindTexture(GL_TEXTURE_2D, glstuff.tex_output);	// bind a named texture to a texturing target  //Connect tex_output to GL_TEXTURE
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER );//GL_REPEAT ); //GL_CLAMP_TO_EDGE);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER );// GL_REPEAT ); //GL_CLAMP_TO_EDGE);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, WIDTH, HEIGHT, 0, GL_RGBA, GL_FLOAT, NULL);
-		glBindImageTexture(0, glstuff.tex_output, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
-		
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);	//Sets paramiters of the texture.
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, WIDTH, HEIGHT, 0, GL_RGBA, GL_FLOAT, NULL); //target,level,internal,width,height,0,format,type,data
+		glBindImageTexture(0, glstuff.tex_output, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F); //unit,texture,level,layrered,layer,access,format
+			//Binds it to layout 0, .tex_output. level 0, <false>, 0 , access, format
 
 		GLuint tmp = glGetUniformLocation(glstuff.prog,"dimentions");
 		glUniform2i(tmp,WIDTH,HEIGHT);
@@ -147,28 +147,34 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
         glfwSetWindowShouldClose(window, GL_TRUE);
     if (key == GLFW_KEY_E && action == GLFW_PRESS){
-		scene++;
+	scene++;
     	changeScene();
     }
     if (key == GLFW_KEY_Q && action == GLFW_PRESS){
-		scene--;
-		changeScene();
+	scene--;
+	changeScene();
     }
 
 }
 
-unsigned char *pixels;
+GLfloat *pixels;
 
 void to_ppm(){
-	glGetTextureImage(glstuff.tex_output,0,GL_RGBA,GL_UNSIGNED_BYTE,WIDTH*HEIGHT*4,&pixels);
+	if(pixels != NULL)
+		free(pixels);
+	pixels = (GLfloat *) malloc(WIDTH*HEIGHT*sizeof(GLfloat)*4);
+	
+	glActiveTexture(GL_TEXTURE0);
+	glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_FLOAT, pixels);
+//	glGetTextureImage(glstuff.tex_output,0,GL_RGBA,GL_UNSIGNED_BYTE,WIDTH*HEIGHT*4,&pixels);
 	FILE * out =fopen("out.ppm","wt");
 	fprintf(out,"P3\n");
-	fprintf(out,"%d  %d\n255\n",WIDTH,HEIGHT);
+	fprintf(out,"%d  %d\n1\n",WIDTH,HEIGHT);
 	int k=0;
 	for(int i =0; i < HEIGHT ; i++){
 		for(int j = 0; j < WIDTH ; j++){
-			fprintf(out," %u %u %u ",(unsigned int)pixels[k],(unsigned int)pixels[k+1], (unsigned int)pixels[k+2]);
-			k+=3;
+			fprintf(out," %f %f %f ", pixels[k], pixels[k+1], pixels[k+2]);
+			k+=4; //4 due to alpha.
 		}
 		fprintf(out,"\n");
 	}
@@ -181,7 +187,7 @@ void Render(){
 
 	glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 
-//	to_ppm();	 //Causes segfault
+	to_ppm();	 //Causes segfault
 	
 	glClearColor(0.2, 0.2, 0.2, 1.0);
 	glClear(GL_COLOR_BUFFER_BIT);
@@ -189,14 +195,13 @@ void Render(){
 	glUseProgram(glstuff.prog);
 	glBindVertexArray(glstuff.vertexarray);
 	glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, glstuff.tex_output);
+	glBindTexture(GL_TEXTURE_2D, glstuff.tex_output);
 	glDrawArrays(GL_TRIANGLE_STRIP,0,4);
 
 	return;
 }
 int main(int argc, char * argv[]){
 
-	pixels = (unsigned char*)malloc(WIDTH*HEIGHT*32);
 
 	GLFWwindow * window = glfw_init(WIDTH,HEIGHT,"Scott Saunders - Assignment 4");	//Init window.
 
