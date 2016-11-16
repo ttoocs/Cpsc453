@@ -168,7 +168,7 @@ void to_ppm(){
 	glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_FLOAT, pixels);
 //	glGetTextureImage(glstuff.tex_output,0,GL_RGBA,GL_UNSIGNED_BYTE,WIDTH*HEIGHT*4,&pixels);
 	FILE * out =fopen("out.ppm","wt");
-	fprintf(out,"P6\n");
+	fprintf(out,"P3\n");
 	fprintf(out,"%d  %d\n1\n",WIDTH,HEIGHT);
 	int k=0;
 	for(int i =0; i < HEIGHT ; i++){
