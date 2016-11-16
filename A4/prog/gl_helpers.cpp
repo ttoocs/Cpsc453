@@ -18,10 +18,6 @@ void ErrorCallback(int error, const char* description)
  }
 
 
-
-
-
-
 void check_glerror(){
 	GLenum error = (glGetError());
 	switch (error){
