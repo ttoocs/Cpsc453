@@ -169,12 +169,12 @@ void to_ppm(){
 //	glGetTextureImage(glstuff.tex_output,0,GL_RGBA,GL_UNSIGNED_BYTE,WIDTH*HEIGHT*4,&pixels);
 	FILE * out =fopen("out.ppm","wt");
 	fprintf(out,"P3\n");
-	fprintf(out,"%d  %d\n1000\n",WIDTH,HEIGHT);
+	fprintf(out,"%d  %d\n255\n",WIDTH,HEIGHT);
 	int k=0;
 	for(int i =0; i < HEIGHT ; i++){
 		for(int j = 0; j < WIDTH ; j++){
-			fprintf(out," %d %d %d ", pixels[k]*1000, pixels[k+1]*1000, pixels[k+2]*1000);
-			k+=4; //4 due to alpha.
+			fprintf(out," %d %d %d ", pixels[k], pixels[k+1], pixels[k+2]);
+			k+=3; //4 due to alpha.
 		}
 		fprintf(out,"\n");
 	}
