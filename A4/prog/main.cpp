@@ -165,7 +165,7 @@ void to_ppm(){
 	pixels = (GLfloat *) malloc(WIDTH*HEIGHT*sizeof(GLint)*4);
 	
 	glActiveTexture(GL_TEXTURE0);
-	glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_int, pixels);
+	glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_INT, pixels);
 //	glGetTextureImage(glstuff.tex_output,0,GL_RGBA,GL_UNSIGNED_BYTE,WIDTH*HEIGHT*4,&pixels);
 	FILE * out =fopen("out.ppm","wt");
 	fprintf(out,"P3\n");
