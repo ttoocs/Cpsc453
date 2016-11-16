@@ -178,7 +178,7 @@ void to_ppm(){
 		}
 		fprintf(out,"\n");
 	}
-	exit(1);
+//	exit(1);
 }
 
 void Render(){
