@@ -51,7 +51,7 @@ void main(){
 //	if(coords.y > 0 ) { colour += vec4(0,1,0,1);}
 	
 
-	colour = vec4(1);
+	colour = vec4(0.2);
 //	ivec2	offset=ivec2(-1,-1);
   	imageStore(img_output, pixel_coords, colour);
 }
