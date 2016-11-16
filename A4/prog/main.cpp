@@ -178,7 +178,7 @@ void to_ppm(){
 		}
 		fprintf(out,"\n");
 	}
-	out.close();
+	fclose(out);
 	exit(1);
 }
 
