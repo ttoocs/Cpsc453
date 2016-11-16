@@ -162,10 +162,10 @@ GLfloat *pixels;
 void to_ppm(){
 	if(pixels != NULL)
 		free(pixels);
-	pixels = (GLfloat *) malloc(WIDTH*HEIGHT*sizeof(GLfloat)*4);
+	pixels = (GLfloat *) malloc(WIDTH*HEIGHT*sizeof(GLint)*4);
 	
 	glActiveTexture(GL_TEXTURE0);
-	glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_FLOAT, pixels);
+	glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_int, pixels);
 //	glGetTextureImage(glstuff.tex_output,0,GL_RGBA,GL_UNSIGNED_BYTE,WIDTH*HEIGHT*4,&pixels);
 	FILE * out =fopen("out.ppm","wt");
 	fprintf(out,"P3\n");
@@ -173,7 +173,7 @@ void to_ppm(){
 	int k=0;
 	for(int i =0; i < HEIGHT ; i++){
 		for(int j = 0; j < WIDTH ; j++){
-			fprintf(out," %f %f %f ", pixels[k]*1000, pixels[k+1]*1000, pixels[k+2]*1000);
+			fprintf(out," %d %d %d ", pixels[k]*1000, pixels[k+1]*1000, pixels[k+2]*1000);
 			k+=4; //4 due to alpha.
 		}
 		fprintf(out,"\n");
