@@ -26,22 +26,27 @@ uint 	gl_LocalInvocationID
 #define OBJSIZE 13
 
 #define OBJ objs
+#define OBJ_BADDR(X) X*OBJSIZE
+#define OBJ_ADDR(X,Y) OBJ_BADDR(X)+Y
+#define OBJ_DATA(X,Y) OBJ[OBJ_ADDR(X,Y)]
+#define OBJ_TOVEC3(X,Y) vec3(OBJ_DATA(X,Y),OBJ_DATA(X,Y+1),OBJ_DATA(X,Y+2))
+#define OBJ_SETV3(X,Y,Z)  OBJ_DATA(X,Y)=Z.x; OBJ_DATA(X,Y)=Z.y; OBJ_DATA(X,Y)=Z.z;
 
-#define obj_type(X) float(OBJ[X*OBJSIZE])
-#define obj_colour(X) vec3(OBJ[(X*OBJSIZE)+1],OBJ[(X*OBJSIZE)+2],OBJ[(X*OBJSIZE)+3])
+#define obj_type(X) float(OBJ_DATA(X,0])
+#define obj_colour(X) OBJ_TOVEC3(X,1)
 
-#define set_s_c(X,a,b,c) OBJ[(X*OBJSIZE)+4]=a; OBJ[(X*OBJSIZE)+5]=b; OBJ[(X*OBJSIZE)+6]=c;
-#define sphere_c(X) vec3(OBJ[(X*OBJSIZE)+4], OBJ[(X*OBJSIZE)+5], OBJ[(X*OBJSIZE)+6])
-#define sphere_r(X) float(OBJ[(X*OBJSIZE)+7])
+#define set_s_c(X,Y) OBJ_SETV3(X,4,Z)
+#define sphere_c(X) OBJ_TOVEC3(X,4)
+#define sphere_r(X) float(OBJ_DATA(X,7)
 
-#define tri_p1(X) vec3(OBJ[(X*OBJSIZE)+4], OBJ[(X*OBJSIZE)+5], OBJ[(X*OBJSIZE)+6])
-#define tri_p2(X) vec3(OBJ[(X*OBJSIZE)+7], OBJ[(X*OBJSIZE)+8], OBJ[(X*OBJSIZE)+9])
-#define tri_p3(X) vec3(OBJ[(X*OBJSIZE)+10], OBJ[(X*OBJSIZE)+11], OBJ[(X*OBJSIZE)+12])
+#define tri_p1(X) OBJ_TOVEC3(X,4)
+#define tri_p2(X) OBJ_TOVEC3(X,7)
+#define tri_p3(X) OBJ_TOVEC3(X,10)
 
-#define plane_n(X) vec3(OBJ[(X*OBJSIZE)+4], OBJ[(X*OBJSIZE)+5], OBJ[(X*OBJSIZE)+6])
-#define plane_p(X) vec3(OBJ[(X*OBJSIZE)+7], OBJ[(X*OBJSIZE)+8], OBJ[(X*OBJSIZE)+9])
+#define plane_n(X) OBJ_TOVEC3(X,4)
+#define plane_p(X) OBJ_TOVEC3(X,7)
 
-#define light_p(X) vec3(OBJ[(X*OBJSIZE)+4], OBJ[(X*OBJSIZE)+5], OBJ[(X*OBJSIZE)+6])
+#define light_p(X) OBJ_TOVEC3(X,4)
 
 
 #define PI 3.14159265358793
