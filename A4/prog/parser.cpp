@@ -52,7 +52,12 @@ std::vector<GLfloat> parse(std::string filename){
 			#ifdef debug
 			cout << "Parsing plane" << endl;
 			#endif
-			F_PUSH(T_SPHERE);
+			F_PUSH(T_PLANE);
+		}else if (!line.find("particle")){
+			#ifdef debug
+            cout << "Parsing particle" << endl;
+            #endif
+            F_PUSH(T_PARTICLE);
 		}else{cout << "Unparsed: " << line << endl; continue;}
 		//Now set data-values.
 		cnt=1;
@@ -89,7 +94,7 @@ std::vector<GLfloat> parse(std::string filename){
 	while(i < data.size()){
 		cout << data.data()[i] << " ";
 		i++;
-		if(i%OBJSIZE==0) cout << endl;
+		if((i-1)%OBJSIZE==0) cout << endl;
 	}
 	cout << endl;
 	#endif

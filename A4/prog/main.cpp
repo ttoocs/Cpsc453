@@ -19,6 +19,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
 
 #include "gl_helpers.cpp"
 #include "parser.cpp"
@@ -31,7 +32,7 @@
 using namespace std;
 int scene=2;
 bool initalized=false;
-bool particles=false;
+int particles= 0;
 
 GLfloat vertices[]={
 	-1,	1,
@@ -157,27 +158,34 @@ void changeScene(){
 	
 
 	//Generate extra-space for paricles ;D
-	if(particles){
-	float z = 0;
-	for(int i=0; i<WIDTH ; i++){
-		for(int j=0; i<HEIGHT ; i++){
+	
+	if(particles!=0){
+	int z = floor(sqrt(particles));
+	for(int i=0; i<z ; i++){
+		for(int j=0; j<z ; j++){
 			objects.push_back(T_PARTICLE);
-			float x = ((float)i)*2/WIDTH;
-			float y = ((float)j)*2/HEIGHT;
+			float x = ((float)i)*2/z;
+			float y = ((float)j)*2/z;
+			x -= 1;
+			y -= 1;
 			V_PUSH(objects,0,0.5,0.5);	//Cyan color
 			V_PUSH(objects,x,y,0);		//Position
-			V_PUSH(objects,0,0,0.001f);	//Velocity
+			V_PUSH(objects,0,0,0.01f);	//Velocity
+//			cout << x << ":" << y << endl;
+			objects.push_back(0);
+			objects.push_back(0);
+			objects.push_back(0);
 		}
 	}
 	objects.data()[0] = (objects.size()/OBJSIZE);
-	}
+	} 
 
 
 	// Update objects.
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, glstuff.ssbo);
 	glBufferData(GL_SHADER_STORAGE_BUFFER, objects.size()*sizeof(GLfloat), objects.data(), GL_DYNAMIC_COPY);
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0); // unbind
-	//cout << objects << endl;
+	cout << objects.data()[0] << endl;
 }
 
 
@@ -259,6 +267,7 @@ int main(int argc, char * argv[]){
 	while(!glfwWindowShouldClose(window)){ //Main loop.
 		Render();
     	glfwSwapBuffers(window);
+		usleep(100);
 		glfwPollEvents();
 	}
 	
