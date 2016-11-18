@@ -31,6 +31,7 @@
 using namespace std;
 int scene=2;
 bool initalized=false;
+bool particles=false;
 
 GLfloat vertices[]={
 	-1,	1,
@@ -157,11 +158,10 @@ void changeScene(){
 
 	//Generate extra-space for paricles ;D
 	if(particles){
-	data.pop_front(); //Remove the number of objects, as it's now wrong.
 	float z = 0;
 	for(int i=0; i<WIDTH ; i++){
 		for(int j=0; i<HEIGHT ; i++){
-			data.push_back(T_PARTICLE);
+			objects.push_back(T_PARTICLE);
 			float x = ((float)i)*2/WIDTH;
 			float y = ((float)j)*2/HEIGHT;
 			V_PUSH(objects,0,0.5,0.5);	//Cyan color
@@ -169,7 +169,7 @@ void changeScene(){
 			V_PUSH(objects,0,0,0.001f);	//Velocity
 		}
 	}
-	data.push(data.size()/OBJSIZE);
+	objects.data()[0] = (objects.size()/OBJSIZE);
 	}
 
 

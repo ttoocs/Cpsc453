@@ -5,6 +5,7 @@
 #define T_SPHERE 3
 #define T_PLANE 4
 #define T_POINT 5
+#define T_PARTICLE 6
 
 /*
 Compute shader variables:
@@ -35,7 +36,7 @@ uint 	gl_LocalInvocationID
 #define OBJ_TOVEC3(X,Y) vec3(OBJ_DATA(X,Y),OBJ_DATA(X,Y+1),OBJ_DATA(X,Y+2))
 #define OBJ_SETV3(X,Y,Z)  OBJ_DATA(X,Y)=Z.x; OBJ_DATA(X,Y)=Z.y; OBJ_DATA(X,Y)=Z.z;
 
-#define num_objs int(OBJ[0]);
+#define num_objs int(OBJ[0])
 
 #define obj_type(X) float(OBJ_DATA(X,0))
 #define obj_colour(X) OBJ_TOVEC3(X,1)
@@ -180,17 +181,29 @@ float test_object_intersect(ray r, uint obj){
 			return ray_intersect_plane(r,obj);
 //			break;
 		case T_POINT:
-		case T_LIGHT:
 			return ray_intersect_point(r,obj);
+		case T_LIGHT:
+			return(-1);
 //			break;
+		case T_PARTICLE;
+			return(-1);
 	}
 	//If we get here, we have issues.
 	set_error(E_TYPE);
 }
 
 vec4 test_objects_intersect(ray r){ //Tests _ALL_ objects
-	
-	return vec4(0);
+	float t;
+	vec4 ret = vec4(0,0,0,-1);
+	int i = 0;
+	for(i=0; i < num_objs ; i++ ){
+		t = test_object_intersect(r,i);
+		if(ret.w == -1 || t < ret.w && t >= 0){
+			ret.w = t;
+			ret.xyz = obj_colour(i);
+		}		
+	}
+	return(ret);
 }
 
 
@@ -221,6 +234,9 @@ void main(){
 //	colour = normalize(vec4(ray_intersect_triangle(cray,1)));
 //	colour = ((vec4(ray_intersect_plane(cray,2))));
 
+
+	vec4 res = test_objects_intersect(cray);
+	colour = vec4(res.xyz,0);
 
 		//Moving stuff, cause I can!
 //	if(pixel_coords.x == 0 && pixel_coords.y == 0){

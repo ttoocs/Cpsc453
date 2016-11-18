@@ -27,6 +27,7 @@ std::vector<GLfloat> parse(std::string filename){
 	int cnt;
 	
 	ifstream file=ifstream(filename);
+	F_PUSH(0);
 	while (file){
 		getline(file,line); //Reads a line from file and puts it in line.
 		if(line[0] == '#'){continue;}
@@ -92,7 +93,7 @@ std::vector<GLfloat> parse(std::string filename){
 	}
 	cout << endl;
 	#endif
-	data.push_front(data.size()/OBJSIZE); //Make first index the number of objects.
+	data.data()[0] = (data.size()/OBJSIZE); //Make first index the number of objects.
 	return(data);
 }
 
