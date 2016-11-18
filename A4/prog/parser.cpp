@@ -5,6 +5,8 @@
 #define T_LIGHT		2
 #define T_SPHERE	3
 #define T_PLANE		4
+#define T_POINT		5
+#define T_PARTICLE	6
 
 #define F_PUSH(X)	f_tmp = X; data.push_back(f_tmp);
 #define D_PUSH		token >> f_tmp; data.push_back(f_tmp);
@@ -90,6 +92,7 @@ std::vector<GLfloat> parse(std::string filename){
 	}
 	cout << endl;
 	#endif
+	data.push_front(data.size()/OBJSIZE); //Make first index the number of objects.
 	return(data);
 }
 

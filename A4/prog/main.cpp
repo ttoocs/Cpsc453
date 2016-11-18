@@ -26,6 +26,8 @@
 #define WIDTH 512
 #define HEIGHT 512
 
+#define V_PUSH(X,a,b,c) X.push_back(a); X.push_back(b); X.push_back(c);
+
 using namespace std;
 int scene=2;
 bool initalized=false;
@@ -151,7 +153,26 @@ void changeScene(){
 	//for(int i =0; i<256 ; i++){
 	//	objects.push_back(1.0);
 	//}
-		
+	
+
+	//Generate extra-space for paricles ;D
+	if(particles){
+	data.pop_front(); //Remove the number of objects, as it's now wrong.
+	float z = 0;
+	for(int i=0; i<WIDTH ; i++){
+		for(int j=0; i<HEIGHT ; i++){
+			data.push_back(T_PARTICLE);
+			float x = ((float)i)*2/WIDTH;
+			float y = ((float)j)*2/HEIGHT;
+			V_PUSH(objects,0,0.5,0.5);	//Cyan color
+			V_PUSH(objects,x,y,0);		//Position
+			V_PUSH(objects,0,0,0.001f);	//Velocity
+		}
+	}
+	data.push(data.size()/OBJSIZE);
+	}
+
+
 	// Update objects.
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, glstuff.ssbo);
 	glBufferData(GL_SHADER_STORAGE_BUFFER, objects.size()*sizeof(GLfloat), objects.data(), GL_DYNAMIC_COPY);
