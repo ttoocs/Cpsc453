@@ -27,7 +27,7 @@
 #define HEIGHT 512
 
 using namespace std;
-int scene=0;
+int scene=2;
 bool initalized=false;
 
 GLfloat vertices[]={
@@ -46,7 +46,7 @@ struct GLSTUFF{
 	GLuint fragShader;
 	GLuint compShader;
 	GLuint tex_output;
-	
+	GLuint ssbo;
 };
 GLSTUFF glstuff;
 
@@ -54,17 +54,18 @@ GLSTUFF glstuff;
 
 #define MAX_SCENE 2
 void changeScene(){
-	
+	vector<GLfloat> objects;	
 	if(scene > MAX_SCENE)
 		scene = 0;
-	if(scene < MAX_SCENE )
+	if(scene < 0  )
 		scene = MAX_SCENE;
+	printf("Scene: %d\n",scene+1);
 	if(scene == 0){
-		vector<GLfloat> objects = parse("scene1.txt");
+		objects = parse("scene1.txt");
 	}else if(scene == 1){
-		vector<GLfloat> objects = parse("scene2.txt");
+		objects = parse("scene2.txt");
 	}else if(scene == 2){
-		vector<GLfloat> objects = parse("scene3.txt");
+		objects = parse("scene3.txt");
 	}
 
 	if(!initalized){
@@ -132,12 +133,30 @@ void changeScene(){
 
 		GLuint tmp = glGetUniformLocation(glstuff.prog,"dimentions");
 		glUniform2i(tmp,WIDTH,HEIGHT);
+
+
+		//Buffer stuff
+		glGenBuffers(1,&glstuff.ssbo);
+		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, glstuff.ssbo);
 		
 		
 	}
 
 		//Update stuff
+
 	
+	//cout << objects.data()[0] << endl;
+	//TEST-HACK FOR DATA_PASSTHROUGH
+	//objects.clear();
+	//for(int i =0; i<256 ; i++){
+	//	objects.push_back(1.0);
+	//}
+		
+	// Update objects.
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, glstuff.ssbo);
+	glBufferData(GL_SHADER_STORAGE_BUFFER, objects.size()*sizeof(GLfloat), objects.data(), GL_DYNAMIC_COPY);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0); // unbind
+	//cout << objects << endl;
 }
 
 
@@ -179,7 +198,7 @@ void to_ppm(){
 		fprintf(out,"\n");
 	}
 	fclose(out);
-//	exit(1);
+	//exit(1);
 }
 
 void Render(){
@@ -188,9 +207,10 @@ void Render(){
 
 	glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 
+//	to_ppm();	 
 	
-	glClearColor(0.2, 0.2, 0.2, 1.0);
-	glClear(GL_COLOR_BUFFER_BIT);
+//	glClearColor(0.2, 0.2, 0.2, 1.0);
+//	glClear(GL_COLOR_BUFFER_BIT);
 
 	glUseProgram(glstuff.prog);
 	glBindVertexArray(glstuff.vertexarray);
@@ -198,7 +218,6 @@ void Render(){
 	glBindTexture(GL_TEXTURE_2D, glstuff.tex_output);
 	glDrawArrays(GL_TRIANGLE_STRIP,0,4);
 	
-	to_ppm();	 
 
 	return;
 }
@@ -211,12 +230,14 @@ int main(int argc, char * argv[]){
 	glEnable(GL_DEBUG_OUTPUT);								//DEBUG :D
 	glEnable( GL_DEBUG_OUTPUT_SYNCHRONOUS);	
 
+	glfwSetKeyCallback(window, KeyCallback);
+
 	changeScene();	//Load up a scene!
 
-	Render();
 
 	while(!glfwWindowShouldClose(window)){ //Main loop.
-    		glfwSwapBuffers(window);
+		Render();
+    	glfwSwapBuffers(window);
 		glfwPollEvents();
 	}
 	

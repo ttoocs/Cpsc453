@@ -10,7 +10,7 @@
 #define D_PUSH		token >> f_tmp; data.push_back(f_tmp);
 #define GETDATA		D_PUSH D_PUSH D_PUSH D_PUSH D_PUSH D_PUSH D_PUSH D_PUSH D_PUSH 
 
-#define OBJSIZE		12
+#define OBJSIZE		13
 
 //Simply parses input into uniform object.
 using namespace std;
@@ -52,7 +52,7 @@ std::vector<GLfloat> parse(std::string filename){
 			F_PUSH(T_SPHERE);
 		}else{cout << "Unparsed: " << line << endl; continue;}
 		//Now set data-values.
-		cnt=0;
+		cnt=1;
 		while (true) {
 			getline(file,line); //Get next line.	
 			if(!line.find('}')){break;} //Break if close bracket.
@@ -81,6 +81,12 @@ std::vector<GLfloat> parse(std::string filename){
 
 	}
 	file.close();
+	int i =0;
+	while(i < data.size()){
+		cout << data.data()[i] << " ";
+		i++;
+	}
+	cout << endl;
 	return(data);
 }
 

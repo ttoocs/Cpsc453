@@ -1,5 +1,10 @@
 #version 430
 
+#define T_TRI 1
+#define T_LIGHT 2
+#define T_SPHERE 3
+#define T_PLANE 4
+
 /*
 Compute shader variables:
 uvec3 	gl_numWorkGroups
@@ -14,25 +19,130 @@ uint 	gl_LocalInvocationID
 
 
 
+
+//ACCESS FUNCTIONS FOR OBJECTS.
+
+
+#define OBJSIZE 13
+
+#define OBJ objs
+
+#define obj_type(X) float(OBJ[X*OBJSIZE])
+#define obj_colour(X) vec3(OBJ[(X*OBJSIZE)+1],OBJ[(X*OBJSIZE)+2],OBJ[(X*OBJSIZE)+3])
+
+#define set_s_c(X,a,b,c) OBJ[(X*OBJSIZE)+4]=a; OBJ[(X*OBJSIZE)+5]=b; OBJ[(X*OBJSIZE)+6]=c;
+#define sphere_c(X) vec3(OBJ[(X*OBJSIZE)+4], OBJ[(X*OBJSIZE)+5], OBJ[(X*OBJSIZE)+6])
+#define sphere_r(X) float(OBJ[(X*OBJSIZE)+7])
+
+#define tri_p1(X) vec3(OBJ[(X*OBJSIZE)+4], OBJ[(X*OBJSIZE)+5], OBJ[(X*OBJSIZE)+6])
+#define tri_p2(X) vec3(OBJ[(X*OBJSIZE)+7], OBJ[(X*OBJSIZE)+8], OBJ[(X*OBJSIZE)+9])
+#define tri_p3(X) vec3(OBJ[(X*OBJSIZE)+10], OBJ[(X*OBJSIZE)+11], OBJ[(X*OBJSIZE)+12])
+
+#define plane_n(X) vec3(OBJ[(X*OBJSIZE)+4], OBJ[(X*OBJSIZE)+5], OBJ[(X*OBJSIZE)+6])
+#define plane_p(X) vec3(OBJ[(X*OBJSIZE)+7], OBJ[(X*OBJSIZE)+8], OBJ[(X*OBJSIZE)+9])
+
+#define light_p(X) vec3(OBJ[(X*OBJSIZE)+4], OBJ[(X*OBJSIZE)+5], OBJ[(X*OBJSIZE)+6])
+
+
+#define PI 3.14159265358793
+
+struct ray{
+	vec3 origon;
+	vec3 direction;
+};
+
+
+//uniform vec4 cam = vec4(0,0,0,PI/3);
+
 layout(local_size_x = 1, local_size_y = 1) in;
 layout(rgba32f, binding = 0) uniform image2D img_output;
 
-int ray_intersect_tri(uint obj){
-	return 0;
+layout(std430, binding = 1) buffer object_buffer{
+	float objs[];
+};
+
+float ray_intersect_sphere(ray r, uint obj_ID){
+
+	
+	float t1,t2;
+	float a = dot(r.direction,r.direction);
+	float b = 2* dot(r.direction, (r.origon - sphere_c(obj_ID)))  ;
+	float c = dot((r.origon - sphere_c(obj_ID)),(r.origon - sphere_c(obj_ID)))-pow(sphere_r(obj_ID),2);
+
+
+	float det = (pow(b,2) - 4*a*c);
+	if(det < 0){return 0;}
+	t1 = (-b + sqrt(det))/2*a;
+	t2 = (-b - sqrt(det))/2*a;
+
+	return(det);
+	
+	if(t1 < t2 && t1 > 0){
+		return(t1);
+	}else
+		return(t2);
+
+//	return t1;
+		
 }
-int ray_intersect_sphere(uint obj){
-	return 0;
+
+// #define TEST_CULL
+float ray_intersect_triangle(ray r, uint obj){
+	#define EPSILON 0.000001
+	//Möller–Trumbore algorithm
+	vec3 e1 = tri_p2(obj) - tri_p1(obj);	//SUB
+	vec3 e2 = tri_p3(obj) - tri_p1(obj);	//SUB
+	
+	vec3 pvec = cross(r.direction, e2);		//CROSS
+	float det = dot(e1,pvec);					//DOT
+
+	#ifdef TEST_CULL
+	if(det < EPSILON)
+	#else
+	if(det < EPSILON && det >-EPSILON)
+	#endif
+		return(-1);	
+	vec3 tvec = r.origon - tri_p1(obj);
+	float u = dot(tvec,pvec);
+	if (u < 0.0 || u > det)
+		return(-1);
+	vec3 qvec = cross(tvec,e1);
+	float v = dot(r.direction,qvec);
+	if (v < 0.0 || u + v > det)
+		return(-1);
+	float t = dot(e2,qvec);
+	t /= det;
+	u /= det;
+	v /= det;	
+	return t;
 }
-int ray_intersect_plane(uint obj){
-	return 0;
+
+float ray_intersect_plane(ray r, uint obj){
+	//(dot(O +td -q, n) =0
+	float div = dot(r.direction,plane_n(obj));
+	if(div < EPSILON)
+		return -1;
+	float t = (dot(r.origon,plane_n(obj)) - dot(plane_n(obj),plane_p(obj)));
+	return t;
 }
-int ray_intersect_point(uint obj){
-	return 0;
+float ray_intersect_point(ray r, uint obj){
+	vec3 t= (r.origon - light_p(0));
+	t.x /= r.direction.x;
+	t.y /= r.direction.y;
+	t.z /= r.direction.z;
+	if(t.x == t.y && t.x == t.z && t.y == t.z){
+		return t.x;
+	} else
+		return -1;
+
 }
 
 // unifrom float objets[];
 
 void main(){
+	
+	vec4 cam = vec4(0,0,0,PI/3);
+
   	ivec2 dims = imageSize (img_output);
 
 	vec4 colour = vec4(0);
@@ -40,21 +150,41 @@ void main(){
 
   	ivec2 pixel_coords = ivec2(gl_GlobalInvocationID.xy);
 
-//	vec2 coords = vec2(gl_GlobalInvocationID.xy*2 - 512) /512;
 	vec2 coords = vec2(gl_GlobalInvocationID.xy)/256;
 	coords = coords + vec2(-1);
-	
-	colour += vec4(abs(coords),0,0);
 
-	if(coords.x == 0 ) { colour = vec4(0,0,1,0);}
-	if(coords.y == 0 ) { colour = vec4(0,0,1,0);}
-//	if(coords.x == 256 ) { colour = vec4(1,0,1,1);}
-//	if(coords.y > 0 ) { colour += vec4(0,1,0,1);}
+	//Red-green-ness	
+//	colour = vec4(abs(coords),0,0);
+	
+	ray cray;
+	cray.origon = vec3(cam.xyz);
+
+	cray.direction = vec3(coords, -1/tan(cam.w/2));
+	cray.direction = normalize(cray.direction);
+
+//	colour = abs(vec4(1.f/4.f));	
+//	colour = normalize(abs(vec4(ray_intersect_sphere(cray,0))));
+//	colour = normalize(vec4(ray_intersect_triangle(cray,1)));
+
 	
 
-//	colour = vec4(1,1,1,0);
-//	colour = vec4(1);
-//	ivec2	offset=ivec2(-1,-1);
-  	imageStore(img_output, pixel_coords, colour);
+//	colour = normalize(abs(vec4(tri_p3(1).)));
+
+
+//	colour += normalize(abs(vec4(ray_intersect_sphere(cray,1))));	
+	colour = (abs(vec4(ray_intersect_plane(cray,2))));
+//	colour = normalize(abs(vec4(obj_colour(0),0)));
+
+
+//	if(pixel_coords.x == 0 && pixel_coords.y == 0){
+//		set_s_c(0,sphere_c(0).x, sphere_c(0).y+0.01f,sphere_c(0).z);
+//		OBJ[12+5] = cos(sphere_c(0).y)*8;
+//		OBJ[(1*OBJSIZE)+7] = sin(sphere_r(0))*3;
+//	}
+
+	//Corrisponding test-hack for data passthrough
+//	colour = vec4(objs[pixel_coords.x],objs[pixel_coords.y],0,0);	
+//	colour = vec4(1,0,0,1);
+	imageStore(img_output, pixel_coords, colour);
 }
 
