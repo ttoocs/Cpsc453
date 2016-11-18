@@ -4,6 +4,7 @@
 #define T_LIGHT 2
 #define T_SPHERE 3
 #define T_PLANE 4
+#define T_POINT 5
 
 /*
 Compute shader variables:
@@ -60,6 +61,24 @@ layout(rgba32f, binding = 0) uniform image2D img_output;
 layout(std430, binding = 1) buffer object_buffer{
 	float objs[];
 };
+
+int ERROR=0;
+#define E_OTHER 1
+#define E_TYPE 2
+void set_error(int type){
+	if(ERROR ==0)
+		ERROR=type;
+}
+void error_out(ivec2 pixel_coords){	
+	vec4 c = vec4(1,1,1,1);
+/*	switch(ERROR){
+		case (E_OTHER):
+			c=vec4(0,0,1,0);
+			break;
+
+	}*/
+	imageStore(img_output, pixel_coords, c);
+}
 
 float ray_intersect_sphere(ray r, uint obj_ID){
 
@@ -139,6 +158,32 @@ float ray_intersect_point(ray r, uint obj){
 
 // unifrom float objets[];
 
+float test_object_intersect(ray r, uint obj){
+	switch(int(obj_type(obj))){
+		case T_TRI:
+			return ray_intersect_triangle(r,obj);	
+			break;
+		case T_SPHERE:
+			return ray_intersect_sphere(r,obj);
+			break;
+		case T_PLANE:
+			return ray_intersect_plane(r,obj);
+			break;
+		case T_POINT:
+		case T_LIGHT:
+			return ray_intersect_point(r,obj);
+			break;
+	}
+	//If we get here, we have issues.
+	set_error(E_TYPE);
+}
+
+vec4 test_objects_intersect(){
+	
+	return vec4(0);
+}
+
+
 void main(){
 	
 	vec4 cam = vec4(0,0,0,PI/3);
@@ -162,20 +207,14 @@ void main(){
 	cray.direction = vec3(coords, -1/tan(cam.w/2));
 	cray.direction = normalize(cray.direction);
 
-//	colour = abs(vec4(1.f/4.f));	
 //	colour = normalize(abs(vec4(ray_intersect_sphere(cray,0))));
 //	colour = normalize(vec4(ray_intersect_triangle(cray,1)));
+//	colour = ((vec4(ray_intersect_plane(cray,2))));
 
 	
 
-//	colour = normalize(abs(vec4(tri_p3(1).)));
 
-
-//	colour += normalize(abs(vec4(ray_intersect_sphere(cray,1))));	
-	colour = (abs(vec4(ray_intersect_plane(cray,2))));
-//	colour = normalize(abs(vec4(obj_colour(0),0)));
-
-
+		//Moving stuff, cause I can!
 //	if(pixel_coords.x == 0 && pixel_coords.y == 0){
 //		set_s_c(0,sphere_c(0).x, sphere_c(0).y+0.01f,sphere_c(0).z);
 //		OBJ[12+5] = cos(sphere_c(0).y)*8;
@@ -185,6 +224,9 @@ void main(){
 	//Corrisponding test-hack for data passthrough
 //	colour = vec4(objs[pixel_coords.x],objs[pixel_coords.y],0,0);	
 //	colour = vec4(1,0,0,1);
-	imageStore(img_output, pixel_coords, colour);
+	if(ERROR ==0)
+		imageStore(img_output, pixel_coords, colour);
+	else
+	  	error_out(pixel_coords);
 }
 

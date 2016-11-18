@@ -81,12 +81,15 @@ std::vector<GLfloat> parse(std::string filename){
 
 	}
 	file.close();
-	int i =0;
+	#ifdef debug
+	int i =0;	//Print out data
 	while(i < data.size()){
 		cout << data.data()[i] << " ";
 		i++;
+		if(i%OBJSIZE==0) cout << endl;
 	}
 	cout << endl;
+	#endif
 	return(data);
 }
 
