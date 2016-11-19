@@ -32,7 +32,8 @@
 using namespace std;
 int scene=2;
 bool initalized=false;
-int particles= 0;
+int particles=  0;
+bool update = true;
 
 GLfloat vertices[]={
 	-1,	1,
@@ -161,31 +162,37 @@ void changeScene(){
 	
 	if(particles!=0){
 	int z = floor(sqrt(particles));
-	for(int i=0; i<z ; i++){
-		for(int j=0; j<z ; j++){
+	for(int i=0; i<=z ; i++){
+		for(int j=0; j<=z ; j++){
 			objects.push_back(T_PARTICLE);
-			float x = ((float)i)*2/z;
-			float y = ((float)j)*2/z;
+			float x;
+			float y;
+			x = ((float)i)*2/z;
+			y = ((float)j)*2/z;
+//			float x = ((float)i)*2/z;
+//			float y = ((float)j)*2/z;
 			x -= 1;
 			y -= 1;
 			V_PUSH(objects,0,0.5,0.5);	//Cyan color
-			V_PUSH(objects,x,y,0);		//Position
-			V_PUSH(objects,0,0,0.01f);	//Velocity
+			V_PUSH(objects,x,y,-0.5);		//Position
+			objects.push_back(0.02);
+			V_PUSH(objects,0,0,-0.01f);	//Velocity
 //			cout << x << ":" << y << endl;
 			objects.push_back(0);
 			objects.push_back(0);
-			objects.push_back(0);
+//			objects.push_back(0);
 		}
 	}
 	objects.data()[0] = (objects.size()/OBJSIZE);
 	} 
-
 
 	// Update objects.
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, glstuff.ssbo);
 	glBufferData(GL_SHADER_STORAGE_BUFFER, objects.size()*sizeof(GLfloat), objects.data(), GL_DYNAMIC_COPY);
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0); // unbind
 	cout << objects.data()[0] << endl;
+
+	update=true;
 }
 
 
@@ -231,6 +238,8 @@ void to_ppm(){
 }
 
 void Render(){
+	if(update){
+	update=false;
 	glUseProgram(glstuff.cprog);
 	glDispatchCompute((GLuint)WIDTH, (GLuint)HEIGHT, 1);
 
@@ -246,7 +255,7 @@ void Render(){
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, glstuff.tex_output);
 	glDrawArrays(GL_TRIANGLE_STRIP,0,4);
-	
+	}
 
 	return;
 }
@@ -267,8 +276,9 @@ int main(int argc, char * argv[]){
 	while(!glfwWindowShouldClose(window)){ //Main loop.
 		Render();
     	glfwSwapBuffers(window);
-		usleep(100);
-		glfwPollEvents();
+		//usleep(100);
+		//glfwPollEvents();
+		glfwWaitEvents();
 	}
 	
 	glfwTerminate();	//Kill the glfw interface
