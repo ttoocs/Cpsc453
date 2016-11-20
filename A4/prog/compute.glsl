@@ -63,8 +63,13 @@ struct ray{
 	vec3 origin;
 	vec3 direction;
 };
+//NEEDS n normal
+#define reflect_ray(R,N) R-2*dot(R,N)N
+//#define refract_ray(R,N,T  //TODO
+
 
 vec4 colour = vec4(0);
+bool shadow = false;
 
 //uniform vec4 cam = vec4(0,0,0,PI/3);
 
@@ -144,28 +149,25 @@ float ray_intersect_triangle(ray r, uint obj){
 
 float ray_intersect_plane(ray r, uint obj){
 	//(dot(O +td -q, n) =0
-	if(plane_ned(obj)==0 && vec2(gl_GlobalInvocationID.xy) == ivec2(0)){		//Probably causes some error on 1st frame.
-		OBJ_SETV3(obj,3,normalize(plane_n(obj)));	
-		plane_ned(obj) = 1;
-	}
 
-	float d = dot(r.direction,plane_n(obj));
+//	if(plane_ned(obj)==0 && ivec2(gl_GlobalInvocationID.xy) == ivec2(0)){		//Probably causes some error on 1st frame.
+//		OBJ_SETV3(obj,3,normalize(plane_n(obj)));	
+//		plane_ned(obj) = 1;
+//	}
+	vec3 norm = normalize(plane_n(obj));
+
+	float d = dot(r.direction,norm);
 	if(d < EPSILON && d > -EPSILON)
 		return -1;
-	float t = dot(plane_p(obj),plane_n(obj)) - dot(r.origin,plane_n(obj));
-
+//	float t = dot(plane_p(obj),norm) - dot(r.origin,norm);
+	float t = dot(norm,(plane_p(obj)-r.origin));
 	t /= d;
-	return t;
 
-/*	float div = dot(r.direction,plane_n(obj));
-
-	if(div < EPSILON)
+	if(t <= EPSILON)
 		return -1;
 
-	float t = (-dot(r.origin,plane_n(obj)) + dot(plane_n(obj),plane_p(obj)));
-	t	/=	div;
 	return t;
-*/
+
 }
 
 #define BEPSILON 0.01
@@ -175,6 +177,7 @@ float ray_intersect_point(ray r, uint obj){
 	t.y /= r.direction.y;
 	t.z /= r.direction.z;
 
+	//Approxmation, ends up very poor.
 
 	if(abs(t.x - t.y) < BEPSILON || abs(r.direction.x) < BEPSILON || abs(r.direction.y) < BEPSILON ){
 		if(abs(t.x -t.z ) < BEPSILON || abs(r.direction.x) < BEPSILON || abs(r.direction.z) < BEPSILON ){
@@ -183,13 +186,13 @@ float ray_intersect_point(ray r, uint obj){
 			}
 		}
 	} 
+	return -1;
 
-/*
+
 	if(abs(t.x - t.y)< BEPSILON && abs(t.x - t.z) < BEPSILON && abs(t.y - t.z) < BEPSILON){
 		return t.x;
-	} else */
-
-	return -1;
+	} else
+		return -1;
 	
 
 }
@@ -200,19 +203,18 @@ float test_object_intersect(ray r, uint obj){
 	switch(int(obj_type(obj))){
 		case T_TRI:
 			return ray_intersect_triangle(r,obj);	
-//			break;
 		case T_SPHERE:
 			return ray_intersect_sphere(r,obj);
-//			break;
 		case T_PLANE:
 			return ray_intersect_plane(r,obj);
-//			break;
 		case T_POINT:
 			return(-1);
-//			return ray_intersect_point(r,obj);
+			//return ray_intersect_point(r,obj);
 		case T_LIGHT:
-			return ray_intersect_point(r,obj);
-//			break;
+			if(shadow==false)
+				return(-1);
+			else
+				return ray_intersect_point(r,obj);
 		case T_PARTICLE:
 			return ray_intersect_sphere(r,obj);
 	}
@@ -227,7 +229,7 @@ vec4 test_objects_intersect(ray r){ //Tests _ALL_ objects
 	int i = 0;
 	for(i=0; i < num_objs ; i++ ){
 		t = test_object_intersect(r,i);
-		if(ret.x < 0 || t < ret.x && t >= 0){
+		if( ( ret.x < 0 ||  t < ret.x ) && t >= 0  ){
 			ret.x = t; //Distance
 			ret.y = i; //Object
 		}		
@@ -238,33 +240,61 @@ vec4 test_objects_intersect(ray r){ //Tests _ALL_ objects
 //TODO: SHADOWS
 
 
-void shadow_rays(vec3 hitpos){
-	//Iterates through each object to find lights, making vectors and testing shadows as it goes.
+vec4 shadow_rays(vec3 hitpos){
+	//Iterates through each object to find lights, making shadow rays and testing them as it goes.
 	int cnt=0;
 	vec4 test;
 	ray sray;
 	vec4 ret=vec4(0);
+	shadow = true;
 	for(int i=0; i < num_objs ; i++){
 		if(obj_type(i) == T_LIGHT){
 			cnt++;
-			sray.direction = normalize(-hitpos+light_p(i));
-//			if (obj_type(i) != T_PLANE){
-				sray.origin = hitpos - sray.direction *0.001;
-//			}else{
-//				sray.origin = hitpos + sray.direction *0.001;
-//			}
+
+			vec3 vect = -hitpos+ light_p(i);
+			float vlen = sqrt(dot(vect,vect));
+
+			sray.direction = normalize(vect);
+			sray.origin = hitpos + sray.direction *0.01;
+
 			test = test_objects_intersect(sray);
-//			if(test.w > 0 && test.w <= 1){
+
+/*				NONE OF THESE WORK. IDK WHY.
+//			colour = vec4(test.t/5*sray.direction,0);
+
+//			colour = vec4(1/test.t);
+
+//			if(abs(test.x - vlen) <= EPSILON)
+//				return;
+
+//			if(test.x == vlen)
+//				return;
+
+//			if( abs(test.x - vlen) < 0.001)
+//				return;
+
+//			
+//			if(abs(test.x - len) <= EPSILON);
+//				colour = vec4(test.x/abs(vlen));
+
+//			if(test.x -abs(sqrt(dot(-hitpos+light_p(i),-hitpos+light_p(i)))) < EPSILON)
+//				return;
+//			colour *= 0.1;
+//			
+//			if(test.x >= 0 && abs(test.x - sqrt((dot(hitpos-light_p(i),hitpos-light_p(i))))) <= EPSILON){
+//				colour *= 0.1;
+//			}
+//
+
+*/
 			if(int(obj_type(int(test.y))) != T_LIGHT){
-				colour *= 0.1;	
+				colour *= 0.1;
+				ret.w = 1; //IN SHADOW.
+				ret.xyz = vect
 			}
-//				ret.w += test.w;
-			
+
 		}
 	}
-//	ret.x = cnt;
-//	return (ret);
-		
 }
 
 
@@ -289,22 +319,27 @@ void main(){
 	//Red-green-ness	
 //	colour = vec4(abs(coords),0,0);
 	
+
+//	colour = (vec4(ray_intersect_sphere(cray,0)!=-1));
+//	colour = (vec4(ray_intersect_triangle(cray,1)!=-1));	//Test ray intersects (scene3)
+//	colour = (vec4(1/(ray_intersect_plane(cray,2))));
+
+
 	ray cray;
 	cray.origin = vec3(cam.xyz);
 
 	cray.direction = vec3(coords, -1/tan(cam.w/2));
 	cray.direction = normalize(cray.direction);
 
-//	colour = (vec4(ray_intersect_sphere(cray,0)!=-1));
-//	colour = (vec4(ray_intersect_triangle(cray,1)!=-1));	//Test ray intersects (scene3)
-//	colour = (vec4(1/(ray_intersect_plane(cray,2))));
-
+	shadow=false;
 	vec4 res = test_objects_intersect(cray);
 	if(res.x >= 0)
 		colour = vec4(obj_colour(int(res.y)),0);
 
 	vec3 hitpos = res.x * cray.direction + cray.origin;
-//	shadow_rays(hitpos);	
+	vec4 shadowinfo = shadow_rays(hitpos);	
+
+
 
 	//MOVES PARTICLES. NOTE: NO COLLISONS YET.
 
