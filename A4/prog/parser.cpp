@@ -29,7 +29,7 @@ std::vector<GLfloat> parse(std::string filename){
 	
 	ifstream file=ifstream(filename);
 	F_PUSH(0);	//For Object Size
-	F_PUSH(0);	F_PUSH(0); 	F_PUSH(0);	//For Ambient light levels
+	F_PUSH(0.5);	F_PUSH(0.5); 	F_PUSH(0.5);	//For Ambient light levels
 	while (file){
 		getline(file,line); //Reads a line from file and puts it in line.
 		if(line[0] == '#'){continue;}
@@ -70,15 +70,15 @@ std::vector<GLfloat> parse(std::string filename){
 			#ifdef debug
 			cout << "\tParsing line: " << line << endl;
 			#endif
+			int a=1;
 			while(std::getline(iss,token,' ')){
-				int a=0;
 				#ifdef debug
 				cout << "\t\tParsing token: " << token << endl;
 				#endif
 				if(token[0] == ' '){continue;}
 				if(token == ""){continue;}
-				data.data()[a++] = stof(token);
-				if(a>=3){break;}
+				data.at(a++) = stof(token);
+				if(a>3){break;}
 			}
 			getline(file,line);
 			if(line.find('}')){cout << "Something bad happened in parsing ambient." << endl;}
@@ -113,6 +113,9 @@ std::vector<GLfloat> parse(std::string filename){
 
 	}
 	file.close();
+
+	data.at(0) = (data.size()/OBJSIZE); //Make first index the number of objects.
+
 //	#ifdef debug
 	int i =0;	//Print out data
 	while(i < data.size()){
@@ -122,7 +125,7 @@ std::vector<GLfloat> parse(std::string filename){
 	}
 	cout << endl;
 //	#endif
-	data.data()[0] = (data.size()/OBJSIZE); //Make first index the number of objects.
+	
 	return(data);
 }
 

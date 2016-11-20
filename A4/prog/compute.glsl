@@ -69,6 +69,11 @@ struct ray{
 	vec3 origin;
 	vec3 direction;
 };
+struct RefRay{
+	ray 	rray;
+	vec3 	data;
+}
+
 //NEEDS n normal
 #define reflect_ray(R,N) R-2*dot(R,N)N
 //#define refract_ray(R,N,T  //TODO
@@ -84,6 +89,10 @@ layout(rgba32f, binding = 0) uniform image2D img_output;
 
 layout(std430, binding = 1) buffer object_buffer{
 	float objs[];
+};
+layout(std430, binding = 2) buffer reflection_buffer{
+	vec4 ref_state;
+	RefRay ref_rays[];
 };
 
 int ERROR=0;
@@ -123,7 +132,6 @@ float ray_intersect_sphere(ray r, uint obj_ID){
 		return(t2);
 		
 }
-#define TEST_CULL
 float ray_intersect_triangle(ray r, uint obj){
 	//Möller–Trumbore algorithm
 	vec3 e1 = tri_p2(obj) - tri_p1(obj);	//SUB
@@ -247,8 +255,10 @@ vec4 test_objects_intersect(ray r){ //Tests _ALL_ objects
 vec3 get_surface_norm(ray r, uint obj){
 	switch(int(obj_type(obj))){
 		case T_TRI:
-			vec3 tmp = normalize(cross(tri_p1(obj),tri_p2(obj)));
-//			if(dot(r.direction,tmp) <0)
+			vec3 tmp = normalize(cross(tri_p1(obj)-tri_p2(obj),tri_p1(obj)-tri_p3(obj)));
+			
+//			tmp = abs(tmp);
+//			if(dot(r.direction,tmp) > 0)
 //				tmp =-tmp;
 //			tmp = normalize(dot(r.direction,tmp)*tmp);
 			return(tmp);
@@ -344,14 +354,11 @@ void main(){
 //		colour *= 0.2;
 	////////////////////Diffuse Lights/////////////////////
 
-colour = vec4(0,0,0,0);
-
 	shadow = true;
 	if(scnt == 0){	//If not in shadow
 	int cnt;
 	for(int i=0; i < num_objs ; i++){
 	if(obj_type(i) == T_LIGHT){
-//		if(cnt > lcnt){break;}	//End loop when all lights done.
 		cnt++;
 		svect = light_p(i) - hitpos;
 		svlen = sqrt(dot(svect,svect));
@@ -362,16 +369,14 @@ colour = vec4(0,0,0,0);
 
 		if((int(obj_type(int(stest.y))) == T_LIGHT)){
 			vec3 surface_norm  = get_surface_norm(sray,int(res.y));	//Get _a_ normal
-//			surface_norm = normalize(dot(surface_norm,sray.direction)*surface_norm);
-//			if(dot(sray.direction,surface_norm) <= 0)
-//				surface_norm = -surface_norm;			//Suppose all normals are facing the right way?
 
-			colour = abs(vec4(surface_norm,0));
+//			colour = vec4(surface_norm,0);		//Display the norm
 			//DIFFUSE
-//			colour = colour * vec4((ambient + obj_colour(i)*max(0,abs(dot(sray.direction,surface_norm)))),0);
+			colour = colour * vec4((ambient + obj_colour(i)*max(0,dot(sray.direction,surface_norm))),0);
 			//PHONG
-			vec3 h = -(cray.direction + sray.direction) / sqrt(dot(-cray.direction,- sray.direction));
-//			colour += vec4(obj_colour(i)*obj_pcolour(int(res.y))*pow(dot(surface_norm,h),obj_phong(i)),0);
+			vec3 h = (-cray.direction + sray.direction);
+			h /= length(h);
+			colour += vec4(obj_colour(i)*obj_pcolour(int(res.y))*pow(max(0,dot(surface_norm,h)),obj_phong(i)),0);
 
 		}
 		}
@@ -379,10 +384,9 @@ colour = vec4(0,0,0,0);
 	}
 
 
-//	colour = vec4(get_surface_norm(hitpos,int(res.y)),0);
 	/////////////////REFLECTIONS////////////////////////////////
 	/// D: Ideally, just do an iteration per point per frame-thingy.
-
+		
 	
 
 	

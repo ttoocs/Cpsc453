@@ -32,7 +32,7 @@
 using namespace std;
 int scene=2;
 bool initalized=false;
-int particles=  0;
+int particles= 0;
 bool update = true;
 
 GLfloat vertices[]={
@@ -52,6 +52,7 @@ struct GLSTUFF{
 	GLuint compShader;
 	GLuint tex_output;
 	GLuint ssbo;
+	GLuint refbo;
 };
 GLSTUFF glstuff;
 
@@ -145,6 +146,12 @@ void changeScene(){
 		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, glstuff.ssbo);
 		
 		
+		glGenBuffers(1,&glstuff.refbo);			//Reflection buffer
+		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, glstuff.refbo);
+		glBindBuffer(GL_SHADER_STORAGE_BUFFER, glstuff.refbo);
+		glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(GLfloat)*((4*3*WIDTH*HEIGHT)+4), NULL, GL_DYNAMIC_COPY);
+		glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0); // unbind
+		
 	}
 
 		//Update stuff
@@ -192,6 +199,12 @@ void changeScene(){
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0); // unbind
 	cout << objects.data()[0] << endl;
 
+
+	GLfloat zero = 0;
+	//Cause a refresh of reflections:
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, glstuff.refbo);
+    glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, sizeof(GLfloat), &zero);
+	
 	update=true;
 }
 

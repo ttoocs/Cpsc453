@@ -34,8 +34,9 @@
 #	Phong	<float>
 #	Velocity <float> <float> <float>
 #
-
-
+ambient {
+ 0.2 0.2 0.2
+}
 
 light {
   1 1 1
