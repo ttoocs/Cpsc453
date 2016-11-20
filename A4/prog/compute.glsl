@@ -1,12 +1,5 @@
 #version 430
 
-#define T_TRI 1
-#define T_LIGHT 2
-#define T_SPHERE 3
-#define T_PLANE 4
-#define T_POINT 5
-#define T_PARTICLE 6
-
 /*
 Compute shader variables:
 uvec3 	gl_numWorkGroups
@@ -20,17 +13,19 @@ uint 	gl_LocalInvocationID
 */
 
 
-
-
-//ACCESS FUNCTIONS FOR OBJECTS.
-
-
 #define OBJSIZE 13
+#define T_TRI 1
+#define T_LIGHT 2
+#define T_SPHERE 3
+#define T_PLANE 4
+#define T_POINT 5
+#define T_PARTICLE 6
 
+//Accsessor functions for objects.
 
 #define OBJ objs
 //Offset by 1, for the object[] size.
-#define OBJ_BADDR(X) ((X*OBJSIZE)+1)
+#define OBJ_BADDR(X) ((X*OBJSIZE)+4)
 #define OBJ_ADDR(X,Y) OBJ_BADDR(X)+Y
 #define OBJ_DATA(X,Y) OBJ[OBJ_ADDR(X,Y)]
 #define OBJ_TOVEC3(X,Y) vec3(OBJ_DATA(X,Y),OBJ_DATA(X,Y+1),OBJ_DATA(X,Y+2))
@@ -290,11 +285,12 @@ vec4 shadow_rays(vec3 hitpos){
 			if(int(obj_type(int(test.y))) != T_LIGHT){
 				colour *= 0.1;
 				ret.w = 1; //IN SHADOW.
-				ret.xyz = vect
+				ret.xyz = vect;
 			}
 
 		}
 	}
+	return(ret);
 }
 
 

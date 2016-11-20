@@ -27,12 +27,14 @@ std::vector<GLfloat> parse(std::string filename){
 	int cnt;
 	
 	ifstream file=ifstream(filename);
-	F_PUSH(0);
+	F_PUSH(0);	//For Object Size
+	F_PUSH(0);	F_PUSH(0); 	F_PUSH(0);	//For Ambient light levels.
 	while (file){
 		getline(file,line); //Reads a line from file and puts it in line.
 		if(line[0] == '#'){continue;}
 		else if(line.size() <= 2){continue;}
-		else if(!line.find("triangle")){
+		cnt=1;
+		if(!line.find("triangle")){
 			#ifdef debug
 			cout << "Parsing triangle" << endl;
 			#endif
@@ -55,12 +57,27 @@ std::vector<GLfloat> parse(std::string filename){
 			F_PUSH(T_PLANE);
 		}else if (!line.find("particle")){
 			#ifdef debug
-            cout << "Parsing particle" << endl;
-            #endif
-            F_PUSH(T_PARTICLE);
+		        cout << "Parsing particle" << endl;
+            		#endif
+		        F_PUSH(T_PARTICLE);
+		}else if (!line.find("ambient")){
+			#ifdef debug
+			cout << "Parsing Ambient" << endl;
+			#endif
+			getline(file,line);
+			std::istringstream iss (line);
+			while(std::getline(iss,token,' ')){
+				int a=0;
+				if(token[0] == ' '){continue;}
+				if(token == ""){continue;}
+				data.data()[a++] = stof(token);
+				if(a>=3){break;}
+			}
+			getline(file,line);
+			if(line.find('}')){cout << "Something bad happened in parsing ambient." << endl;}
+			continue;
 		}else{cout << "Unparsed: " << line << endl; continue;}
 		//Now set data-values.
-		cnt=1;
 		while (true) {
 			getline(file,line); //Get next line.	
 			if(!line.find('}')){break;} //Break if close bracket.
