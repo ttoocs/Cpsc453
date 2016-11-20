@@ -14,6 +14,7 @@ uint 	gl_LocalInvocationID
 
 
 #define OBJSIZE 21
+#define T_NONE 7
 #define T_TRI 1
 #define T_LIGHT 2
 #define T_SPHERE 3
@@ -25,7 +26,9 @@ uint 	gl_LocalInvocationID
 
 #define OBJ objs
 //Offset by 1, for the object[] size.
+#define num_objs int(OBJ[0])
 //Offset by 3, for ambient light levels.
+#define ambient vec3(OBJ[1],OBJ[2],OBJ[3])
 
 #define OBJ_BADDR(X) ((X*OBJSIZE)+4) 
 #define OBJ_ADDR(X,Y) OBJ_BADDR(X)+Y
@@ -33,11 +36,10 @@ uint 	gl_LocalInvocationID
 #define OBJ_TOVEC3(X,Y) vec3(OBJ_DATA(X,Y),OBJ_DATA(X,Y+1),OBJ_DATA(X,Y+2))
 #define OBJ_SETV3(X,Y,Z)  OBJ_DATA(X,Y)=Z.x; OBJ_DATA(X,Y)=Z.y; OBJ_DATA(X,Y)=Z.z;
 
-#define num_objs int(OBJ[0])
 
 #define obj_type(X) 		OBJ_DATA(X,0)
 #define obj_colour(X) 		OBJ_TOVEC3(X,1)
-#define obj_diffuse(X) 		OBJ_TOVEC3(X,4)
+#define obj_pcolour(X) 		OBJ_TOVEC3(X,4)
 #define obj_velc(X)   		OBJ_TOVEC3(7)
 #define obj_phong(X)   		OBJ_DATA(X,10)
 #define obj_reflec(X)		OBJ_DATA(X,11)
@@ -230,6 +232,7 @@ vec4 test_objects_intersect(ray r){ //Tests _ALL_ objects
 	float t;
 	vec4 ret;
 	ret.x = -1;
+	ret.y = T_NONE;
 	int i = 0;
 	for(i=0; i < num_objs ; i++ ){
 		t = test_object_intersect(r,i);
@@ -239,6 +242,30 @@ vec4 test_objects_intersect(ray r){ //Tests _ALL_ objects
 		}		
 	}
 	return(ret);
+}
+
+vec3 get_surface_norm(ray r, uint obj){
+	switch(int(obj_type(obj))){
+		case T_TRI:
+			vec3 tmp = normalize(cross(tri_p1(obj),tri_p2(obj)));
+//			if(dot(r.direction,tmp) <0)
+//				tmp =-tmp;
+//			tmp = normalize(dot(r.direction,tmp)*tmp);
+			return(tmp);
+		case T_SPHERE:
+			return normalize(r.origin-sphere_c(obj));
+		case T_PLANE:
+			return normalize(plane_n(obj));
+		case T_POINT:
+			return vec3(0);
+		case T_LIGHT:
+			return vec3(0);
+		case T_PARTICLE:
+			return vec3(0);
+		case T_NONE:
+			return vec3(0);
+
+	}
 }
 
 
@@ -309,18 +336,50 @@ void main(){
 			if(int(obj_type(int(stest.y))) != T_LIGHT){				 //If it intersects a light.
 				scnt++;
 			}
+			
 		}
 	}
-	if(lcnt != 0)
+	if(scnt != 0)
 		colour *= ((lcnt-scnt)/lcnt);		//Apply shadows.
+//		colour *= 0.2;
 	////////////////////Diffuse Lights/////////////////////
 
-	if(scnt == 0){	//If not in shadow
-		
+colour = vec4(0,0,0,0);
 
+	shadow = true;
+	if(scnt == 0){	//If not in shadow
+	int cnt;
+	for(int i=0; i < num_objs ; i++){
+	if(obj_type(i) == T_LIGHT){
+//		if(cnt > lcnt){break;}	//End loop when all lights done.
+		cnt++;
+		svect = light_p(i) - hitpos;
+		svlen = sqrt(dot(svect,svect));
+		sray.direction = normalize(svect);
+
+		sray.origin = hitpos + sray.direction *0.01;
+		stest = test_objects_intersect(sray);
+
+		if((int(obj_type(int(stest.y))) == T_LIGHT)){
+			vec3 surface_norm  = get_surface_norm(sray,int(res.y));	//Get _a_ normal
+//			surface_norm = normalize(dot(surface_norm,sray.direction)*surface_norm);
+//			if(dot(sray.direction,surface_norm) <= 0)
+//				surface_norm = -surface_norm;			//Suppose all normals are facing the right way?
+
+			colour = abs(vec4(surface_norm,0));
+			//DIFFUSE
+//			colour = colour * vec4((ambient + obj_colour(i)*max(0,abs(dot(sray.direction,surface_norm)))),0);
+			//PHONG
+			vec3 h = -(cray.direction + sray.direction) / sqrt(dot(-cray.direction,- sray.direction));
+//			colour += vec4(obj_colour(i)*obj_pcolour(int(res.y))*pow(dot(surface_norm,h),obj_phong(i)),0);
+
+		}
+		}
+	}
 	}
 
 
+//	colour = vec4(get_surface_norm(hitpos,int(res.y)),0);
 	/////////////////REFLECTIONS////////////////////////////////
 	/// D: Ideally, just do an iteration per point per frame-thingy.
 
