@@ -12,8 +12,9 @@
 #define D_PUSH		token >> f_tmp; data.push_back(f_tmp);
 #define GETDATA		D_PUSH D_PUSH D_PUSH D_PUSH D_PUSH D_PUSH D_PUSH D_PUSH D_PUSH 
 
-#define OBJSIZE		13
+#define OBJSIZE		21
 
+#define debug
 //Simply parses input into uniform object.
 using namespace std;
 
@@ -28,7 +29,7 @@ std::vector<GLfloat> parse(std::string filename){
 	
 	ifstream file=ifstream(filename);
 	F_PUSH(0);	//For Object Size
-	F_PUSH(0);	F_PUSH(0); 	F_PUSH(0);	//For Ambient light levels.
+	F_PUSH(0);	F_PUSH(0); 	F_PUSH(0);	//For Ambient light levels
 	while (file){
 		getline(file,line); //Reads a line from file and puts it in line.
 		if(line[0] == '#'){continue;}
@@ -66,8 +67,14 @@ std::vector<GLfloat> parse(std::string filename){
 			#endif
 			getline(file,line);
 			std::istringstream iss (line);
+			#ifdef debug
+			cout << "\tParsing line: " << line << endl;
+			#endif
 			while(std::getline(iss,token,' ')){
 				int a=0;
+				#ifdef debug
+				cout << "\t\tParsing token: " << token << endl;
+				#endif
 				if(token[0] == ' '){continue;}
 				if(token == ""){continue;}
 				data.data()[a++] = stof(token);
@@ -106,15 +113,15 @@ std::vector<GLfloat> parse(std::string filename){
 
 	}
 	file.close();
-	#ifdef debug
+//	#ifdef debug
 	int i =0;	//Print out data
 	while(i < data.size()){
 		cout << data.data()[i] << " ";
 		i++;
-		if((i-1)%OBJSIZE==0) cout << endl;
+		if((i-4)%OBJSIZE==0) cout << endl;
 	}
 	cout << endl;
-	#endif
+//	#endif
 	data.data()[0] = (data.size()/OBJSIZE); //Make first index the number of objects.
 	return(data);
 }

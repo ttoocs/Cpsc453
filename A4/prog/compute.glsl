@@ -13,7 +13,7 @@ uint 	gl_LocalInvocationID
 */
 
 
-#define OBJSIZE 13
+#define OBJSIZE 21
 #define T_TRI 1
 #define T_LIGHT 2
 #define T_SPHERE 3
@@ -25,7 +25,9 @@ uint 	gl_LocalInvocationID
 
 #define OBJ objs
 //Offset by 1, for the object[] size.
-#define OBJ_BADDR(X) ((X*OBJSIZE)+4)
+//Offset by 3, for ambient light levels.
+
+#define OBJ_BADDR(X) ((X*OBJSIZE)+4) 
 #define OBJ_ADDR(X,Y) OBJ_BADDR(X)+Y
 #define OBJ_DATA(X,Y) OBJ[OBJ_ADDR(X,Y)]
 #define OBJ_TOVEC3(X,Y) vec3(OBJ_DATA(X,Y),OBJ_DATA(X,Y+1),OBJ_DATA(X,Y+2))
@@ -33,22 +35,29 @@ uint 	gl_LocalInvocationID
 
 #define num_objs int(OBJ[0])
 
-#define obj_type(X) OBJ_DATA(X,0)
-#define obj_colour(X) OBJ_TOVEC3(X,1)
+#define obj_type(X) 		OBJ_DATA(X,0)
+#define obj_colour(X) 		OBJ_TOVEC3(X,1)
+#define obj_diffuse(X) 		OBJ_TOVEC3(X,4)
+#define obj_velc(X)   		OBJ_TOVEC3(7)
+#define obj_phong(X)   		OBJ_DATA(X,10)
+#define obj_reflec(X)		OBJ_DATA(X,11)
+#define OBJ_LOCD		12
 
-#define set_s_c(X,Y) OBJ_SETV3(X,4,Y)
-#define sphere_c(X) OBJ_TOVEC3(X,4)
-#define sphere_r(X) OBJ_DATA(X,7)
+#define OBJ_DATAL(X,Y)		OBJ_DATA(X,(OBJ_LOCD+Y))
+#define OBJ_TOVEC3L(X,Y)	OBJ_TOVEC3(X,(OBJ_LOCD+Y))
 
-#define tri_p1(X) OBJ_TOVEC3(X,4)
-#define tri_p2(X) OBJ_TOVEC3(X,7)
-#define tri_p3(X) OBJ_TOVEC3(X,10)
+#define sphere_c(X) OBJ_TOVEC3L(X,0)
+#define sphere_r(X) OBJ_DATAL(X,3)
 
-#define plane_n(X) OBJ_TOVEC3(X,4)
-#define plane_p(X) OBJ_TOVEC3(X,7)
-#define plane_ned(X) OBJ_DATA(X,8)
+#define tri_p1(X) OBJ_TOVEC3L(X,0)
+#define tri_p2(X) OBJ_TOVEC3L(X,3)
+#define tri_p3(X) OBJ_TOVEC3L(X,6)
 
-#define light_p(X) OBJ_TOVEC3(X,4)
+#define plane_n(X) OBJ_TOVEC3L(X,0)
+#define plane_p(X) OBJ_TOVEC3L(X,3)
+#define plane_ned(X) OBJ_DATAL(X,6)
+
+#define light_p(X) OBJ_TOVEC3L(X,0)
 
 
 #define PI 3.14159265358793
@@ -232,71 +241,11 @@ vec4 test_objects_intersect(ray r){ //Tests _ALL_ objects
 	return(ret);
 }
 
-//TODO: SHADOWS
-
-
-vec4 shadow_rays(vec3 hitpos){
-	//Iterates through each object to find lights, making shadow rays and testing them as it goes.
-	int cnt=0;
-	vec4 test;
-	ray sray;
-	vec4 ret=vec4(0);
-	shadow = true;
-	for(int i=0; i < num_objs ; i++){
-		if(obj_type(i) == T_LIGHT){
-			cnt++;
-
-			vec3 vect = -hitpos+ light_p(i);
-			float vlen = sqrt(dot(vect,vect));
-
-			sray.direction = normalize(vect);
-			sray.origin = hitpos + sray.direction *0.01;
-
-			test = test_objects_intersect(sray);
-
-/*				NONE OF THESE WORK. IDK WHY.
-//			colour = vec4(test.t/5*sray.direction,0);
-
-//			colour = vec4(1/test.t);
-
-//			if(abs(test.x - vlen) <= EPSILON)
-//				return;
-
-//			if(test.x == vlen)
-//				return;
-
-//			if( abs(test.x - vlen) < 0.001)
-//				return;
-
-//			
-//			if(abs(test.x - len) <= EPSILON);
-//				colour = vec4(test.x/abs(vlen));
-
-//			if(test.x -abs(sqrt(dot(-hitpos+light_p(i),-hitpos+light_p(i)))) < EPSILON)
-//				return;
-//			colour *= 0.1;
-//			
-//			if(test.x >= 0 && abs(test.x - sqrt((dot(hitpos-light_p(i),hitpos-light_p(i))))) <= EPSILON){
-//				colour *= 0.1;
-//			}
-//
-
-*/
-			if(int(obj_type(int(test.y))) != T_LIGHT){
-				colour *= 0.1;
-				ret.w = 1; //IN SHADOW.
-				ret.xyz = vect;
-			}
-
-		}
-	}
-	return(ret);
-}
-
 
 //TODO: DIFFUSE/SPECULAR REFLECTION
-//TODO: PARTICLES
-//TODO: MOVEMENT
+//TODO: PARTICLES DONE 
+//TODO: MOVEMENT DONE 
+//TODO: CAMERA MOVEMENT - TO BE DONE.
 
 
 void main(){
@@ -327,14 +276,57 @@ void main(){
 	cray.direction = vec3(coords, -1/tan(cam.w/2));
 	cray.direction = normalize(cray.direction);
 
+
+	//////////////////BASIC RAY-TRACING///////////////////
 	shadow=false;
 	vec4 res = test_objects_intersect(cray);
 	if(res.x >= 0)
 		colour = vec4(obj_colour(int(res.y)),0);
 
 	vec3 hitpos = res.x * cray.direction + cray.origin;
-	vec4 shadowinfo = shadow_rays(hitpos);	
 
+	
+	///////////////////BASIC SHADOWS////////////////////////////////
+	//Iterates through each object to find lights, making shadow rays and testing them as it goes.
+	int lcnt=0;
+	int scnt=0;
+	vec4 stest;
+	ray sray;
+	shadow = true;
+	vec3 svect;
+	float svlen;
+	for(int i=0; i < num_objs ; i++){
+		if(obj_type(i) == T_LIGHT){
+			lcnt++;
+			svect = light_p(i) - hitpos;
+			svlen = sqrt(dot(svect,svect));
+
+			sray.direction = normalize(svect);
+			sray.origin = hitpos + sray.direction *0.01;
+
+			stest = test_objects_intersect(sray);
+
+			if(int(obj_type(int(stest.y))) != T_LIGHT){				 //If it intersects a light.
+				scnt++;
+			}
+		}
+	}
+	if(lcnt != 0)
+		colour *= ((lcnt-scnt)/lcnt);		//Apply shadows.
+	////////////////////Diffuse Lights/////////////////////
+
+	if(scnt == 0){	//If not in shadow
+		
+
+	}
+
+
+	/////////////////REFLECTIONS////////////////////////////////
+	/// D: Ideally, just do an iteration per point per frame-thingy.
+
+	
+
+	
 
 
 	//MOVES PARTICLES. NOTE: NO COLLISONS YET.
@@ -347,7 +339,7 @@ void main(){
 //	}
 
 	//Corrisponding test-hack for data passthrough
-//	colour = vec4(objs[pixel_coords.x],objs[pixel_coords.y],0,0);	
+//	colour = vec4(objs[pixel_coords.x],-objs[pixel_coords.y],0,0)/5;	
 //	colour = vec4(1,0,0,1);
 
 	if(ERROR ==0)
