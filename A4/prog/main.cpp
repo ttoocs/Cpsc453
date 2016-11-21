@@ -134,7 +134,7 @@ void changeScene(){
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);	//Sets paramiters of the texture.
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, WIDTH, HEIGHT, 0, GL_RGBA, GL_FLOAT, NULL); //target,level,internal,width,height,0,format,type,data
-		glBindImageTexture(0, glstuff.tex_output, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F); //unit,texture,level,layrered,layer,access,format
+		glBindImageTexture(0, glstuff.tex_output, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F); //unit,texture,level,layrered,layer,access,format
 			//Binds it to layout 0, .tex_output. level 0, <false>, 0 , access, format
 
 		GLuint tmp = glGetUniformLocation(glstuff.prog,"dimentions");
@@ -200,13 +200,14 @@ void changeScene(){
 	cout << objects.data()[0] << endl;
 
 
-	GLfloat zero = 0;
 	//Cause a refresh of reflections:
+	GLfloat zero[(1+WIDTH*HEIGHT)*4*3];
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, glstuff.refbo);
-	glClearBufferData(GL_SHADER_STORAGE_BUFFER, GL_RGBA32F, GL_FLOAT, 
-	//    glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, sizeof(GLfloat)*1, NULL);
+//	GLfloat zero[4] = {0.f,0.f,0.f,0.f};
+//	glClearBufferData(GL_SHADER_STORAGE_BUFFER, GL_RGBA32F, GL_RGBA, GL_FLOAT, &zero);
 	
-	update=true;
+	glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+	//update=true;
 }
 
 
@@ -228,6 +229,7 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
 
 char *pixels;
 
+int out_num=0;
 void to_ppm(){
 	if(pixels != NULL)
 		free(pixels);
@@ -258,7 +260,6 @@ void Render(){
 	glDispatchCompute((GLuint)WIDTH, (GLuint)HEIGHT, 1);
 
 	glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
-
 //	to_ppm();	 
 	
 //	glClearColor(0.2, 0.2, 0.2, 1.0);

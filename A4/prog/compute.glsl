@@ -61,8 +61,6 @@ uint 	gl_LocalInvocationID
 
 #define light_p(X) OBJ_TOVEC3L(X,0)
 
-
-
 #define get_rray ref_rays[(gl_GlobalInvocationID.x + gl_GlobalInvocationID.y*(imageSize (img_output)).x)]
 
 #define PI 3.14159265358793
@@ -72,10 +70,13 @@ struct ray{
 	vec3 origin;
 	vec3 direction;
 };
+
+#ifdef ssbo_ref
 struct RefRay{
 	ray 	r;
 	vec3 	data;
 };
+#endif
 
 //NEEDS n normal
 #define reflect_ray(R,N) R-2*dot(R,N)N
@@ -93,10 +94,13 @@ layout(rgba32f, binding = 0) uniform image2D img_output;
 layout(std430, binding = 1) buffer object_buffer{
 	float objs[];
 };
+
+#ifdef ssbo_ref
 layout(std430, binding = 2) buffer reflection_buffer{
 	vec4 ref_state;
 	RefRay ref_rays[];
 };
+#endif ssbo_ref
 
 int ERROR=0;
 #define E_OTHER 1
@@ -176,7 +180,6 @@ float ray_intersect_plane(ray r, uint obj){
 	float d = dot(r.direction,norm);
 	if(d < EPSILON && d > -EPSILON)
 		return -1;
-//	float t = dot(plane_p(obj),norm) - dot(r.origin,norm);
 	float t = dot(norm,(plane_p(obj)-r.origin));
 	t /= d;
 
@@ -259,11 +262,6 @@ vec3 get_surface_norm(vec3 hitpos, uint obj){
 	switch(int(obj_type(obj))){
 		case T_TRI:
 			vec3 tmp = normalize(cross(tri_p1(obj)-tri_p2(obj),tri_p1(obj)-tri_p3(obj)));
-			
-//			tmp = abs(tmp);
-//			if(dot(r.direction,tmp) > 0)
-//				tmp =-tmp;
-//			tmp = normalize(dot(r.direction,tmp)*tmp);
 			return(tmp);
 		case T_SPHERE:
 			return normalize(hitpos-sphere_c(obj));
@@ -281,13 +279,10 @@ vec3 get_surface_norm(vec3 hitpos, uint obj){
 	}
 }
 
-
-//TODO: DIFFUSE/SPECULAR REFLECTION
-//TODO: PARTICLES DONE 
-//TODO: MOVEMENT DONE 
-//TODO: CAMERA MOVEMENT - TO BE DONE.
-
-
+#ifndef ssbo_ref
+ray newray;
+int hitobj;
+#endif
 
 vec4 rtrace(ray cray){
 
@@ -302,9 +297,15 @@ vec4 rtrace(ray cray){
 	//UPDATE THINGS FOR FUTURE USE./////////////////////////////////
 
 	vec3 surface_norm  = get_surface_norm(hitpos, int(res.y));	
+	#ifdef ssbo_ref
 	get_rray.r.origin = hitpos;
 	get_rray.r.direction = reflect(cray.direction, surface_norm);
 	get_rray.data.x *= obj_reflec(int(res.y));
+	#else
+	hitobj = int(res.y);
+	newray.origin = hitpos;
+	newray.direction = reflect(cray.direction, surface_norm);
+	#ifdef
 	
 	///////////////////BASIC SHADOWS////////////////////////////////
 	//Iterates through each object to find lights, making shadow rays and testing them as it goes.
@@ -379,7 +380,7 @@ void main(){
 
   	ivec2 pixel_coords = ivec2(gl_GlobalInvocationID.xy);
 	
-	vec4 colour = imageLoad(img_output, pixel_coords); //Load a colour.
+	vec4 colour = vec4(0);
 
 	vec2 coords = vec2(gl_GlobalInvocationID.xy)/256;
 	coords = coords + vec2(-1);
@@ -398,11 +399,10 @@ void main(){
 	//		Update said coeffishent as needed
 	//		
 	//		Add to colour
-	//		cry
 
-	
-	if(ref_state.w == 0){
-
+	#ifdef ssbo_ref
+//	colour = vec4(abs(ref_state.w/1));	
+	if(ref_state.w == 1){	//NOT ALWAYS SET TO ZERO?
 		get_rray.data.x = 1;
 		get_rray.data.y = 0;	//Not used for anything.
 		get_rray.data.z = 0;
@@ -413,16 +413,35 @@ void main(){
 		cray.direction = vec3(coords, -1/tan(cam.w/2));
 		cray.direction = normalize(cray.direction);
 
-		colour = rtrace(cray) * (1-get_rray.data.x);	
-
-		ref_state.w++;
-
-	}else {
-		ref_state.w++;
-		vec4 cnew = rtrace(get_rray.r);
-//		colour = vec4(get_rray.r.origin,0);
-		colour += cnew * (1-get_rray.data.x);
+		colour = rtrace(cray) * (1-get_rray.data.x); //IS GOOD.
+		ref_state.w = 1;
 	}
+		
+//	else if(ref_state.w == 1){
+//		colour = imageLoad(img_output, pixel_coords); //Load a colour.
+//		ref_state.w++;
+//		vec4 cnew = rtrace(get_rray.r);
+//		colour = vec4(get_rray.r.origin,0);
+//		colour += cnew * (1-get_rray.data.x);  
+//	}
+//	else
+//		ref_state.w++;
+	#else
+	colour =vec4(0);
+	vec4 c2;
+	float ref_pwr=1;
+
+	newray.origin = vec3(cam.xyz);
+	newray.direction = vec3(coords, -1/tan(cam.w/2));
+	newray.direction = normalize(cray.direction);
+	
+	while(ref_pwr >= 0.001){
+		c2 = rtrace(newray);
+		ref_pwr*=obj_rflec(hitobj);
+		colour += c2 * (1-ref_pwr);
+	}
+
+	#endif
 		
 
 	//MOVES PARTICLES. NOTE: NO COLLISONS YET.
