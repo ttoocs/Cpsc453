@@ -80,7 +80,8 @@ struct RefRay{
 vec4 colour = vec4(0);
 bool shadow = false;
 
-uniform mat4x2  cam = mat4x2(0,0,0,PI/3,0,0,0,0);
+//uniform mat4x2  cam = mat4x2(0,0,0,PI/3,0,0,0,0);
+vec4 cam = vec4(0,0,0,PI/3);
 
 layout(local_size_x = 1, local_size_y = 1) in;
 
@@ -299,7 +300,7 @@ vec4 rtrace(ray cray){
 	#else
 	hitobj = int(res.y);
 	newray.direction = normalize(reflect(cray.direction, surface_norm));
-	newray.origin = hitpos + newray.direction*0.5;
+	newray.origin = hitpos + newray.direction*0;
 	#endif
 	
 	///////////////////BASIC SHADOWS////////////////////////////////
@@ -424,12 +425,14 @@ void main(){
 	vec4 c2;
 	float ref_pwr=1;
 
-	newray.origin = vec3(cam[0][0],cam[0][1],cam[0][2]);
-	newray.direction = vec3(coords, -1/tan(cam[0][3]/2));	//INITAL SETUP
+	newray.direction = vec3(coords, -1/tan(cam.w/2));
+	newray.origin = vec3(cam.xyz);
+//	newray.origin = vec3(cam[0][0],cam[0][1],cam[0][2]);
+//	newray.direction = vec3(coords, -1/tan(PI/6));	//INITAL SETUP
 //	newray.direction = //TRANSPOSE THE LOOK-DIR
 	newray.direction = normalize(newray.direction);
 
-	//#define reflect_by_num 2
+//	#define reflect_by_num 2
 	#ifdef reflect_by_num
 	for(int i=0; i < reflect_by_num ; i ++){
 	#else
@@ -443,7 +446,7 @@ void main(){
 	}
 	#endif
 		
-
+	colour *= 0.5;
 	//MOVES PARTICLES. NOTE: NO COLLISONS YET.
 
 //	if(pixel_coords.y == 0 && pixel_coords.x <= num_objs && obj_type(pixel_coords.x) == T_PARTICLE){
