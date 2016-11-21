@@ -14,7 +14,7 @@
 
 #define OBJSIZE		21
 
-#define debug
+// #define debug
 //Simply parses input into uniform object.
 using namespace std;
 
@@ -116,7 +116,7 @@ std::vector<GLfloat> parse(std::string filename){
 
 	data.at(0) = (data.size()/OBJSIZE); //Make first index the number of objects.
 
-//	#ifdef debug
+	#ifdef debug
 	int i =0;	//Print out data
 	while(i < data.size()){
 		cout << data.data()[i] << " ";
@@ -124,7 +124,7 @@ std::vector<GLfloat> parse(std::string filename){
 		if((i-4)%OBJSIZE==0) cout << endl;
 	}
 	cout << endl;
-//	#endif
+	#endif
 	
 	return(data);
 }

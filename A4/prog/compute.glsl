@@ -62,6 +62,9 @@ uint 	gl_LocalInvocationID
 #define light_p(X) OBJ_TOVEC3L(X,0)
 
 
+
+#define get_rray ref_rays[(gl_GlobalInvocationID.x + gl_GlobalInvocationID.y*(imageSize (img_output)).x)]
+
 #define PI 3.14159265358793
 #define EPSILON 0.000001
 
@@ -70,9 +73,9 @@ struct ray{
 	vec3 direction;
 };
 struct RefRay{
-	ray 	rray;
+	ray 	r;
 	vec3 	data;
-}
+};
 
 //NEEDS n normal
 #define reflect_ray(R,N) R-2*dot(R,N)N
@@ -252,7 +255,7 @@ vec4 test_objects_intersect(ray r){ //Tests _ALL_ objects
 	return(ret);
 }
 
-vec3 get_surface_norm(ray r, uint obj){
+vec3 get_surface_norm(vec3 hitpos, uint obj){
 	switch(int(obj_type(obj))){
 		case T_TRI:
 			vec3 tmp = normalize(cross(tri_p1(obj)-tri_p2(obj),tri_p1(obj)-tri_p3(obj)));
@@ -263,7 +266,7 @@ vec3 get_surface_norm(ray r, uint obj){
 //			tmp = normalize(dot(r.direction,tmp)*tmp);
 			return(tmp);
 		case T_SPHERE:
-			return normalize(r.origin-sphere_c(obj));
+			return normalize(hitpos-sphere_c(obj));
 		case T_PLANE:
 			return normalize(plane_n(obj));
 		case T_POINT:
@@ -285,34 +288,8 @@ vec3 get_surface_norm(ray r, uint obj){
 //TODO: CAMERA MOVEMENT - TO BE DONE.
 
 
-void main(){
-	
-	vec4 cam = vec4(0,0,0,PI/3);
 
-  	ivec2 dims = imageSize (img_output);
-
-  	vec4 pixel = vec4(0.0, 0.0, 0.0, 1.0);
-
-  	ivec2 pixel_coords = ivec2(gl_GlobalInvocationID.xy);
-
-	vec2 coords = vec2(gl_GlobalInvocationID.xy)/256;
-	coords = coords + vec2(-1);
-
-	//Red-green-ness	
-//	colour = vec4(abs(coords),0,0);
-	
-
-//	colour = (vec4(ray_intersect_sphere(cray,0)!=-1));
-//	colour = (vec4(ray_intersect_triangle(cray,1)!=-1));	//Test ray intersects (scene3)
-//	colour = (vec4(1/(ray_intersect_plane(cray,2))));
-
-
-	ray cray;
-	cray.origin = vec3(cam.xyz);
-
-	cray.direction = vec3(coords, -1/tan(cam.w/2));
-	cray.direction = normalize(cray.direction);
-
+vec4 rtrace(ray cray){
 
 	//////////////////BASIC RAY-TRACING///////////////////
 	shadow=false;
@@ -322,6 +299,12 @@ void main(){
 
 	vec3 hitpos = res.x * cray.direction + cray.origin;
 
+	//UPDATE THINGS FOR FUTURE USE./////////////////////////////////
+
+	vec3 surface_norm  = get_surface_norm(hitpos, int(res.y));	
+	get_rray.r.origin = hitpos;
+	get_rray.r.direction = reflect(cray.direction, surface_norm);
+	get_rray.data.x *= obj_reflec(int(res.y));
 	
 	///////////////////BASIC SHADOWS////////////////////////////////
 	//Iterates through each object to find lights, making shadow rays and testing them as it goes.
@@ -368,7 +351,7 @@ void main(){
 		stest = test_objects_intersect(sray);
 
 		if((int(obj_type(int(stest.y))) == T_LIGHT)){
-			vec3 surface_norm  = get_surface_norm(sray,int(res.y));	//Get _a_ normal
+//			vec3 surface_norm  = get_surface_norm(hitpos, int(res.y));	//Get _a_ normal
 
 //			colour = vec4(surface_norm,0);		//Display the norm
 			//DIFFUSE
@@ -384,13 +367,63 @@ void main(){
 	}
 
 
+	return(colour);
+}
+void main(){
+	
+	vec4 cam = vec4(0,0,0,PI/3);
+
+  	ivec2 dims = imageSize (img_output);
+
+  	vec4 pixel = vec4(0.0, 0.0, 0.0, 1.0);
+
+  	ivec2 pixel_coords = ivec2(gl_GlobalInvocationID.xy);
+	
+	vec4 colour = imageLoad(img_output, pixel_coords); //Load a colour.
+
+	vec2 coords = vec2(gl_GlobalInvocationID.xy)/256;
+	coords = coords + vec2(-1);
+
+	//Red-green-ness	
+//	colour = vec4(abs(coords),0,0);
+	
+
+//	colour = (vec4(ray_intersect_sphere(cray,0)!=-1));
+//	colour = (vec4(ray_intersect_triangle(cray,1)!=-1));	//Test ray intersects (scene3)
+//	colour = (vec4(1/(ray_intersect_plane(cray,2))));
+
 	/////////////////REFLECTIONS////////////////////////////////
-	/// D: Ideally, just do an iteration per point per frame-thingy.
+	/// 
+	// Check: The coeffishent is in get_rray.data.x
+	//		Update said coeffishent as needed
+	//		
+	//		Add to colour
+	//		cry
+
+	
+	if(ref_state.w == 0){
+
+		get_rray.data.x = 1;
+		get_rray.data.y = 0;	//Not used for anything.
+		get_rray.data.z = 0;
+
+		ray cray;
+		cray.origin = vec3(cam.xyz);
+
+		cray.direction = vec3(coords, -1/tan(cam.w/2));
+		cray.direction = normalize(cray.direction);
+
+		colour = rtrace(cray) * (1-get_rray.data.x);	
+
+		ref_state.w++;
+
+	}else {
+		ref_state.w++;
+		vec4 cnew = rtrace(get_rray.r);
+//		colour = vec4(get_rray.r.origin,0);
+		colour += cnew * (1-get_rray.data.x);
+	}
 		
-	
-
-	
-
 
 	//MOVES PARTICLES. NOTE: NO COLLISONS YET.
 

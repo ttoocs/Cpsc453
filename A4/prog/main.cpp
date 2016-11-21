@@ -30,7 +30,7 @@
 #define V_PUSH(X,a,b,c) X.push_back(a); X.push_back(b); X.push_back(c);
 
 using namespace std;
-int scene=2;
+int scene=0;
 bool initalized=false;
 int particles= 0;
 bool update = true;
@@ -203,7 +203,8 @@ void changeScene(){
 	GLfloat zero = 0;
 	//Cause a refresh of reflections:
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, glstuff.refbo);
-    glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, sizeof(GLfloat), &zero);
+	glClearBufferData(GL_SHADER_STORAGE_BUFFER, GL_RGBA32F, GL_FLOAT, 
+	//    glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, sizeof(GLfloat)*1, NULL);
 	
 	update=true;
 }
@@ -247,12 +248,12 @@ void to_ppm(){
 		fprintf(out,"\n");
 	}
 	fclose(out);
-	//exit(1);
+	exit(1);
 }
 
 void Render(){
-	if(update){
-	update=false;
+//	if(update){
+//	update=false;
 	glUseProgram(glstuff.cprog);
 	glDispatchCompute((GLuint)WIDTH, (GLuint)HEIGHT, 1);
 
@@ -268,7 +269,7 @@ void Render(){
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, glstuff.tex_output);
 	glDrawArrays(GL_TRIANGLE_STRIP,0,4);
-	}
+//	}
 
 	return;
 }
