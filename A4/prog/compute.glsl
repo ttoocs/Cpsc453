@@ -36,7 +36,6 @@ uint 	gl_LocalInvocationID
 #define OBJ_TOVEC3(X,Y) vec3(OBJ_DATA(X,Y),OBJ_DATA(X,Y+1),OBJ_DATA(X,Y+2))
 #define OBJ_SETV3(X,Y,Z)  OBJ_DATA(X,Y)=Z.x; OBJ_DATA(X,Y)=Z.y; OBJ_DATA(X,Y)=Z.z;
 
-
 #define obj_type(X) 		OBJ_DATA(X,0)
 #define obj_colour(X) 		OBJ_TOVEC3(X,1)
 #define obj_pcolour(X) 		OBJ_TOVEC3(X,4)
@@ -78,17 +77,13 @@ struct RefRay{
 };
 #endif
 
-//NEEDS n normal
-#define reflect_ray(R,N) R-2*dot(R,N)N
-//#define refract_ray(R,N,T  //TODO
-
-
 vec4 colour = vec4(0);
 bool shadow = false;
 
-//uniform vec4 cam = vec4(0,0,0,PI/3);
+uniform mat4x2  cam = mat4x2(0,0,0,PI/3,0,0,0,0);
 
 layout(local_size_x = 1, local_size_y = 1) in;
+
 layout(rgba32f, binding = 0) uniform image2D img_output;
 
 layout(std430, binding = 1) buffer object_buffer{
@@ -100,7 +95,7 @@ layout(std430, binding = 2) buffer reflection_buffer{
 	vec4 ref_state;
 	RefRay ref_rays[];
 };
-#endif ssbo_ref
+#endif 
 
 int ERROR=0;
 #define E_OTHER 1
@@ -303,9 +298,9 @@ vec4 rtrace(ray cray){
 	get_rray.data.x *= obj_reflec(int(res.y));
 	#else
 	hitobj = int(res.y);
-	newray.origin = hitpos;
-	newray.direction = reflect(cray.direction, surface_norm);
-	#ifdef
+	newray.direction = normalize(reflect(cray.direction, surface_norm));
+	newray.origin = hitpos + newray.direction*0.5;
+	#endif
 	
 	///////////////////BASIC SHADOWS////////////////////////////////
 	//Iterates through each object to find lights, making shadow rays and testing them as it goes.
@@ -372,7 +367,7 @@ vec4 rtrace(ray cray){
 }
 void main(){
 	
-	vec4 cam = vec4(0,0,0,PI/3);
+//	vec4 cam = vec4(0,0,0,PI/3);
 
   	ivec2 dims = imageSize (img_output);
 
@@ -387,8 +382,6 @@ void main(){
 
 	//Red-green-ness	
 //	colour = vec4(abs(coords),0,0);
-	
-
 //	colour = (vec4(ray_intersect_sphere(cray,0)!=-1));
 //	colour = (vec4(ray_intersect_triangle(cray,1)!=-1));	//Test ray intersects (scene3)
 //	colour = (vec4(1/(ray_intersect_plane(cray,2))));
@@ -402,14 +395,13 @@ void main(){
 
 	#ifdef ssbo_ref
 //	colour = vec4(abs(ref_state.w/1));	
-	if(ref_state.w == 1){	//NOT ALWAYS SET TO ZERO?
+	if(ref_state.w == 0){	//NOT ALWAYS SET TO ZERO?
 		get_rray.data.x = 1;
 		get_rray.data.y = 0;	//Not used for anything.
 		get_rray.data.z = 0;
 
 		ray cray;
 		cray.origin = vec3(cam.xyz);
-
 		cray.direction = vec3(coords, -1/tan(cam.w/2));
 		cray.direction = normalize(cray.direction);
 
@@ -426,21 +418,29 @@ void main(){
 //	}
 //	else
 //		ref_state.w++;
-	#else
+	#else 
+	//Because the ideal system of slowly adding more reflections is failing, a simpler system is needed.
 	colour =vec4(0);
 	vec4 c2;
 	float ref_pwr=1;
 
-	newray.origin = vec3(cam.xyz);
-	newray.direction = vec3(coords, -1/tan(cam.w/2));
-	newray.direction = normalize(cray.direction);
-	
-	while(ref_pwr >= 0.001){
-		c2 = rtrace(newray);
-		ref_pwr*=obj_rflec(hitobj);
-		colour += c2 * (1-ref_pwr);
-	}
+	newray.origin = vec3(cam[0][0],cam[0][1],cam[0][2]);
+	newray.direction = vec3(coords, -1/tan(cam[0][3]/2));	//INITAL SETUP
+//	newray.direction = //TRANSPOSE THE LOOK-DIR
+	newray.direction = normalize(newray.direction);
 
+	//#define reflect_by_num 2
+	#ifdef reflect_by_num
+	for(int i=0; i < reflect_by_num ; i ++){
+	#else
+	while(ref_pwr >= EPSILON){
+	#endif
+		c2 = rtrace(newray);
+		ref_pwr*=obj_reflec(hitobj);
+		colour += c2 * (1-ref_pwr);
+//		if(hitobj == T_NONE)
+//			break;			//Quit checking if we hit nothing.
+	}
 	#endif
 		
 

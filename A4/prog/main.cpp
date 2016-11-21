@@ -35,6 +35,10 @@ bool initalized=false;
 int particles= 0;
 bool update = true;
 
+float camera[8];
+float step = 0.1;
+
+
 GLfloat vertices[]={
 	-1,	1,
 	-1,	-1,
@@ -219,15 +223,43 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
 {
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
         glfwSetWindowShouldClose(window, GL_TRUE);
-    if (key == GLFW_KEY_E && action == GLFW_PRESS){
+    if (key == GLFW_KEY_1 && action == GLFW_PRESS){
 	scene++;
     	changeScene();
     }
-    if (key == GLFW_KEY_Q && action == GLFW_PRESS){
+    if (key == GLFW_KEY_2 && action == GLFW_PRESS){
 	scene--;
 	changeScene();
     }
 
+    if(key == GLFW_KEY_Z)
+	step -= 0.01;
+    if(key == GLFW_KEY_X)
+	step += 0.01;
+    if(key == GLFW_KEY_W){
+	camera[0]+=step;	//FORWARD/BACK
+    }	
+    if(key == GLFW_KEY_S){
+	camera[0]-=step;
+    }
+    if(key == GLFW_KEY_A){
+ 	camera[1]-=step;	//LEFT/RIGHT
+    }
+    if(key == GLFW_KEY_D){
+	camera[1]+=step;
+    }
+    if(key == GLFW_KEY_Q){
+	camera[2]-=step;	//UP/DOWN
+    }
+    if(key == GLFW_KEY_E){
+	camera[2]+=step;
+    }
+    if(key == GLFW_KEY_R){
+	camera[3]+=step;	//FOV
+    }
+    if(key == GLFW_KEY_F){
+	camera[3]-=step;
+    }
 }
 
 char *pixels;
