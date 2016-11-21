@@ -146,12 +146,14 @@ void changeScene(){
 		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, glstuff.ssbo);
 		
 		
+#ifdef ssbo_ref
 		glGenBuffers(1,&glstuff.refbo);			//Reflection buffer
 		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, glstuff.refbo);
 		glBindBuffer(GL_SHADER_STORAGE_BUFFER, glstuff.refbo);
 		glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(GLfloat)*((4*3*WIDTH*HEIGHT)+4), NULL, GL_DYNAMIC_COPY);
 		glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0); // unbind
 		
+#endif 		
 	}
 
 		//Update stuff
@@ -199,14 +201,15 @@ void changeScene(){
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0); // unbind
 	cout << objects.data()[0] << endl;
 
-
+#ifdef ssbo_ref
 	//Cause a refresh of reflections:
-	GLfloat zero[(1+WIDTH*HEIGHT)*4*3];
+//	GLfloat zero[(1+WIDTH*HEIGHT)*4*3];		//SEGFAULTS?
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, glstuff.refbo);
-//	GLfloat zero[4] = {0.f,0.f,0.f,0.f};
-//	glClearBufferData(GL_SHADER_STORAGE_BUFFER, GL_RGBA32F, GL_RGBA, GL_FLOAT, &zero);
+	GLfloat zero[4] = {0.f,0.f,0.f,0.f};
+	glClearBufferData(GL_SHADER_STORAGE_BUFFER, GL_RGBA32F, GL_RGBA, GL_FLOAT, &zero);
 	
 	glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+#endif
 	//update=true;
 }
 
