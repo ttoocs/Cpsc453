@@ -302,7 +302,7 @@ vec4 rtrace(ray cray){
 	#else
 	hitobj = int(res.y);
 	newray.direction = normalize(reflect(cray.direction, surface_norm));
-	newray.origin = hitpos + newray.direction*0.04;
+	newray.origin = hitpos;// + newray.direction*0.0004;
 	#endif
 	
 	///////////////////BASIC SHADOWS////////////////////////////////
@@ -443,7 +443,7 @@ void main(){
 //	newray.direction = //TRANSPOSE THE LOOK-DIR
 	newray.direction = normalize(newray.direction);
 
-//#define stack_reflect 10
+//  #define stack_reflect 10
 
 #ifndef stack_reflect
 

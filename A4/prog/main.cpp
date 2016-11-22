@@ -24,13 +24,13 @@
 #include "gl_helpers.cpp"
 #include "parser.cpp"
 
-#define WIDTH 512*20
-#define HEIGHT 512*20
+#define WIDTH 512*2
+#define HEIGHT 512*2
 
 #define V_PUSH(X,a,b,c) X.push_back(a); X.push_back(b); X.push_back(c);
 
 #define PPM_OUT 1
-//#define RUN_TEST 10
+#define RUN_TEST 10
 //#define ssbo_ref
 
 using namespace std;
@@ -284,7 +284,7 @@ void to_ppm(){
 //	glGetTextureImage(glstuff.tex_output,0,GL_RGBA,GL_UNSIGNED_BYTE,WIDTH*HEIGHT*4,&pixels);
 	glMemoryBarrier(GL_ALL_BARRIER_BITS);
 	fprintf(out,"P3\n");
-	fprintf(out,"%d %d\n %d \n",WIDTH,HEIGHT,255);
+	fprintf(out,"%d %d\n %d \n",WIDTH,HEIGHT,127);
 	int k=0;
 	for(int i =0; i < HEIGHT ; i++){
 		for(int j = 0; j < WIDTH ; j++){
