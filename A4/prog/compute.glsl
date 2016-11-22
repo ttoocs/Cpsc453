@@ -302,7 +302,7 @@ vec4 rtrace(ray cray){
 	#else
 	hitobj = int(res.y);
 	newray.direction = normalize(reflect(cray.direction, surface_norm));
-	newray.origin = hitpos + newray.direction*0.01;
+	newray.origin = hitpos + newray.direction*0.04;
 	#endif
 	
 	///////////////////BASIC SHADOWS////////////////////////////////
@@ -331,17 +331,17 @@ vec4 rtrace(ray cray){
 			
 		}
 	}
-	if(scnt != 0)
-		colour *= ((lcnt-scnt)/lcnt);		//Apply shadows.
+//	if(scnt != 0)
+//		colour *= ((lcnt-scnt)/lcnt);		//Apply shadows.
 //		colour *= 0.2;
 	////////////////////Diffuse Lights/////////////////////
 
 
 	vec4 c_scaler = vec4(ambient,0);	//Set-up minimum of ambient.
-	vec4 p_scaler;
+	vec4 p_scaler = vec4(0);
 
 	shadow = true;
-	if(scnt == 0){	//If not in shadow
+//	if(scnt == 0){	//If not in shadow
 	int cnt;
 	for(int i=0; i < num_objs ; i++){
 	if(obj_type(i) == T_LIGHT){
@@ -358,20 +358,20 @@ vec4 rtrace(ray cray){
 
 //			colour = vec4(surface_norm,0);		//Display the norm
 			//DIFFUSE
-			c_scaler = vec4((ambient + obj_colour(i)*max(0,dot(sray.direction,surface_norm))),0);
+			c_scaler += vec4((+ obj_colour(i)*max(0,dot(sray.direction,surface_norm))),0);
 //			colour = colour * vec4((ambient + obj_colour(i)*max(0,dot(sray.direction,surface_norm))),0);
 			//PHONG
 			vec3 h = (-cray.direction + sray.direction);
 			h /= length(h);
-			p_scaler = vec4(obj_colour(i)*obj_pcolour(int(res.y))*pow(max(0,dot(surface_norm,h)),obj_phong(i)),0);
+			p_scaler += vec4(obj_colour(i)*obj_pcolour(int(res.y))*pow(max(0,dot(surface_norm,h)),obj_phong(i)),0);
 //			colour += vec4(obj_colour(i)*obj_pcolour(int(res.y))*pow(max(0,dot(surface_norm,h)),obj_phong(i)),0);
 
 		}
 		}
 	}
-	}
+//	}
 
-//	colour = (colour * vec4(c_scaler)) + vec4(p_scaler);
+	colour = (colour * vec4(c_scaler)) + vec4(p_scaler);
 	
 	return(colour);
 }
@@ -387,7 +387,9 @@ void main(){
 	
 	vec4 colour = vec4(0);
 
-	vec2 coords = vec2(gl_GlobalInvocationID.xy)/256;
+//	vec2 coords = vec2(gl_GlobalInvocationID.xy)/256;
+	vec2 coords = vec2(gl_GlobalInvocationID.xy);
+	coords = coords / vec2(dims.xy/2);
 	coords = coords + vec2(-1);
 
 	//Red-green-ness	
@@ -468,14 +470,14 @@ void main(){
 #else
 	//Stack based-recursion.
 	vec4 Cstack[stack_reflect];
-	float Rstack[stack_reflect];
+//	float Rstack[stack_reflect];
 
 	for(int i=0; i < stack_reflect ; i++){
-		Cstack[i]=rtrace(newray);
-		Rstack[i]=obj_reflec(hitobj);
+		Cstack[i]=vec4(rtrace(newray).xyz,obj_reflec(hitobj));
+//		Cstack[i].w=obj_reflec(hitobj);
 	}
 	for(int i=stack_reflect-1 ; i >= 0 ; i--){
-		colour =  mix(Cstack[i], colour, Rstack[i]); 
+		colour.xyz =  mix(Cstack[i].xyz, colour.xyz, Cstack[i].w); 
 	}
 	
 #endif

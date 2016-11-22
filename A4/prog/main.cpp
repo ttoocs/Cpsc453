@@ -24,15 +24,17 @@
 #include "gl_helpers.cpp"
 #include "parser.cpp"
 
-#define WIDTH 512
-#define HEIGHT 512
+#define WIDTH 4096
+#define HEIGHT 4096
 
 #define V_PUSH(X,a,b,c) X.push_back(a); X.push_back(b); X.push_back(c);
 
+//#define PPM_OUT 0
+//#define RUN_TEST 10
 //#define ssbo_ref
 
 using namespace std;
-int scene=0;
+int scene=1;
 bool initalized=false;
 int particles= 0;
 bool update = true;
@@ -267,7 +269,9 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
 char *pixels;
 
 int out_num=0;
+
 void to_ppm(){
+	usleep(1000000);
 	if(pixels != NULL)
 		free(pixels);
 	pixels = (char *) malloc(WIDTH*HEIGHT*sizeof(char)*4);
@@ -287,7 +291,8 @@ void to_ppm(){
 		fprintf(out,"\n");
 	}
 	fclose(out);
-	exit(1);
+	usleep(1000000);
+	exit(0);
 }
 
 void Render(){
@@ -297,8 +302,11 @@ void Render(){
 	glDispatchCompute((GLuint)WIDTH, (GLuint)HEIGHT, 1);
 
 	glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
-//	to_ppm();	 
-	
+//	if(out_num++ == 10)
+	#ifdef PPM_OUT
+		to_ppm();	 
+	#endif	
+
 //	glClearColor(0.2, 0.2, 0.2, 1.0);
 //	glClear(GL_COLOR_BUFFER_BIT);
 
@@ -324,7 +332,6 @@ int main(int argc, char * argv[]){
 
 	changeScene();	//Load up a scene!
 
-//	#define RUN_TEST 20
 	#ifdef RUN_TEST 
 	cout << "Running a test with " << RUN_TEST << " frames." << endl;
 	double initTime = glfwGetTime();
@@ -337,8 +344,8 @@ int main(int argc, char * argv[]){
     	glfwSwapBuffers(window);
 		#ifndef RUN_TEST
 		//usleep(100);
-		//glfwPollEvents();
-		glfwWaitEvents();
+		glfwPollEvents();
+		//glfwWaitEvents();
 
 		#endif
 	}
