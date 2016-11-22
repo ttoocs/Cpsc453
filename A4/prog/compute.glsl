@@ -65,6 +65,8 @@ uint 	gl_LocalInvocationID
 #define PI 3.14159265358793
 #define EPSILON 0.000001
 
+#define ssbo_ref
+
 struct ray{
 	vec3 origin;
 	vec3 direction;
@@ -300,7 +302,7 @@ vec4 rtrace(ray cray){
 	#else
 	hitobj = int(res.y);
 	newray.direction = normalize(reflect(cray.direction, surface_norm));
-	newray.origin = hitpos + newray.direction*0;
+	newray.origin = hitpos + newray.direction*0.01;
 	#endif
 	
 	///////////////////BASIC SHADOWS////////////////////////////////
@@ -396,7 +398,7 @@ void main(){
 
 	#ifdef ssbo_ref
 //	colour = vec4(abs(ref_state.w/1));	
-	if(ref_state.w == 0){	//NOT ALWAYS SET TO ZERO?
+//	if(ref_state.w == 0){	//NOT ALWAYS SET TO ZERO?
 		get_rray.data.x = 1;
 		get_rray.data.y = 0;	//Not used for anything.
 		get_rray.data.z = 0;
@@ -408,7 +410,7 @@ void main(){
 
 		colour = rtrace(cray) * (1-get_rray.data.x); //IS GOOD.
 		ref_state.w = 1;
-	}
+//	}
 		
 //	else if(ref_state.w == 1){
 //		colour = imageLoad(img_output, pixel_coords); //Load a colour.
@@ -432,23 +434,47 @@ void main(){
 //	newray.direction = //TRANSPOSE THE LOOK-DIR
 	newray.direction = normalize(newray.direction);
 
-//	#define reflect_by_num 2
+// #define stack_reflect 10
+
+#ifndef stack_reflect
+
+#define reflect_by_num 10
 	#ifdef reflect_by_num
 	for(int i=0; i < reflect_by_num ; i ++){
 	#else
 	while(ref_pwr >= EPSILON){
 	#endif
-		c2 = rtrace(newray);
+//		c2 = rtrace(newray);
+//		ref_pwr*=obj_reflec(hitobj);				//Attempt at recursion-less.
+//		colour = (colour - c2*ref_pwr)/(1-ref_pwr);
+		
+		c2 = rtrace(newray);			//Works
 		ref_pwr*=obj_reflec(hitobj);
 		colour += c2 * (1-ref_pwr);
+
 //		if(hitobj == T_NONE)
 //			break;			//Quit checking if we hit nothing.
 	}
-	#endif
 		
-	colour *= 0.5;
-	//MOVES PARTICLES. NOTE: NO COLLISONS YET.
+//	colour *= 0.5;
+		
+#else
+	//Stack based-recursion.
+	vec4 Cstack[stack_reflect];
+	float Rstack[stack_reflect];
 
+	for(int i=0; i < stack_reflect ; i++){
+		Cstack[i]=rtrace(newray);
+		Rstack[i]=obj_reflec(hitobj);
+	}
+	for(int i=stack_reflect-1 ; i >= 0 ; i--){
+		colour =  mix(Cstack[i], colour, Rstack[i]); 
+	}
+	
+#endif
+
+#endif
+	//MOVES PARTICLES. NOTE: NO COLLISONS YET.
 //	if(pixel_coords.y == 0 && pixel_coords.x <= num_objs && obj_type(pixel_coords.x) == T_PARTICLE){
 //		OBJ_DATA(pixel_coords.x,4) += OBJ_DATA(pixel_coords.x,8);
 //		OBJ_DATA(pixel_coords.x,5) += OBJ_DATA(pixel_coords.x,9);

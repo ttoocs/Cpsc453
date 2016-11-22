@@ -29,6 +29,8 @@
 
 #define V_PUSH(X,a,b,c) X.push_back(a); X.push_back(b); X.push_back(c);
 
+#define ssbo_ref
+
 using namespace std;
 int scene=0;
 bool initalized=false;
@@ -322,14 +324,28 @@ int main(int argc, char * argv[]){
 
 	changeScene();	//Load up a scene!
 
-
-	while(!glfwWindowShouldClose(window)){ //Main loop.
+	#define RUN_TEST 20
+	#ifdef RUN_TEST 
+	cout << "Running a test with " << RUN_TEST << " frames." << endl;
+	double initTime = glfwGetTime();
+	for (int i=0; i<RUN_TEST; i++)
+	#else
+	while(!glfwWindowShouldClose(window))
+	#endif
+	{ //Main loop.
 		Render();
     	glfwSwapBuffers(window);
+		#ifndef RUN_TEST
 		//usleep(100);
 		//glfwPollEvents();
 		glfwWaitEvents();
+
+		#endif
 	}
-	
+	#ifdef RUN_TEST
+	double endTime = glfwGetTime();
+	cout << "Test run for " << RUN_TEST << " frames is " << endTime-initTime << endl;
+	#endif
+
 	glfwTerminate();	//Kill the glfw interface
 }
