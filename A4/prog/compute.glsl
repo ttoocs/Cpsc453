@@ -65,7 +65,7 @@ uint 	gl_LocalInvocationID
 #define PI 3.14159265358793
 #define EPSILON 0.000001
 
-#define ssbo_ref
+//#define ssbo_ref
 
 struct ray{
 	vec3 origin;
@@ -434,11 +434,11 @@ void main(){
 //	newray.direction = //TRANSPOSE THE LOOK-DIR
 	newray.direction = normalize(newray.direction);
 
-// #define stack_reflect 10
+//#define stack_reflect 10
 
 #ifndef stack_reflect
 
-#define reflect_by_num 10
+//#define reflect_by_num 10
 	#ifdef reflect_by_num
 	for(int i=0; i < reflect_by_num ; i ++){
 	#else

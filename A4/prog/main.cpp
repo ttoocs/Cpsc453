@@ -29,7 +29,7 @@
 
 #define V_PUSH(X,a,b,c) X.push_back(a); X.push_back(b); X.push_back(c);
 
-#define ssbo_ref
+//#define ssbo_ref
 
 using namespace std;
 int scene=0;
@@ -324,7 +324,7 @@ int main(int argc, char * argv[]){
 
 	changeScene();	//Load up a scene!
 
-	#define RUN_TEST 20
+//	#define RUN_TEST 20
 	#ifdef RUN_TEST 
 	cout << "Running a test with " << RUN_TEST << " frames." << endl;
 	double initTime = glfwGetTime();
