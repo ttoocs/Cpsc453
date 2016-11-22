@@ -24,12 +24,12 @@
 #include "gl_helpers.cpp"
 #include "parser.cpp"
 
-#define WIDTH 4096
-#define HEIGHT 4096
+#define WIDTH 512*20
+#define HEIGHT 512*20
 
 #define V_PUSH(X,a,b,c) X.push_back(a); X.push_back(b); X.push_back(c);
 
-//#define PPM_OUT 0
+#define PPM_OUT 1
 //#define RUN_TEST 10
 //#define ssbo_ref
 
@@ -38,6 +38,7 @@ int scene=1;
 bool initalized=false;
 int particles= 0;
 bool update = true;
+bool Exit = false;
 
 float camera[8];
 float step = 0.1;
@@ -118,16 +119,16 @@ void changeScene(){
 		glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, 0);
 		glEnableVertexAttribArray(0);
 
-    	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	    glBindVertexArray(0);
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
+		glBindVertexArray(0);
 	
 		//Push square
 		
 		glBindVertexArray(glstuff.vertexarray);
 		glBindBuffer(GL_ARRAY_BUFFER, glstuff.vertexbuffer);
 		glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-    	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	    glBindVertexArray(0);
+    		glBindBuffer(GL_ARRAY_BUFFER, 0);
+	    	glBindVertexArray(0);
 
 		//Texture stuff
 		
@@ -266,22 +267,24 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
     }
 }
 
+	#ifdef PPM_OUT
 char *pixels;
-
 int out_num=0;
-
 void to_ppm(){
-	usleep(1000000);
 	if(pixels != NULL)
 		free(pixels);
+
+	FILE * out =fopen("out.ppm","wt");
+//	#ifdef PPM_OUT 0
 	pixels = (char *) malloc(WIDTH*HEIGHT*sizeof(char)*4);
 	
 	glActiveTexture(GL_TEXTURE0);
 	glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_BYTE, pixels);
+
 //	glGetTextureImage(glstuff.tex_output,0,GL_RGBA,GL_UNSIGNED_BYTE,WIDTH*HEIGHT*4,&pixels);
-	FILE * out =fopen("out.ppm","wt");
+	glMemoryBarrier(GL_ALL_BARRIER_BITS);
 	fprintf(out,"P3\n");
-	fprintf(out,"%d %d\n %d \n",WIDTH,HEIGHT,127);
+	fprintf(out,"%d %d\n %d \n",WIDTH,HEIGHT,255);
 	int k=0;
 	for(int i =0; i < HEIGHT ; i++){
 		for(int j = 0; j < WIDTH ; j++){
@@ -290,11 +293,31 @@ void to_ppm(){
 		}
 		fprintf(out,"\n");
 	}
-	fclose(out);
-	usleep(1000000);
-	exit(0);
-}
+//	#endif
+/*	#ifdef PPM_OUT 1
+	pixels = (char *) malloc(WIDTH*sizeof(char)*4);
+	fprintf(out,"P6\n");
+	fprintf(out,"%d %d\n %d \n",WIDTH,HEIGHT,127);
 
+	for(int i = 0; i < HEIGHT; i++){	
+		int x = HEIGHT-i-1;		//Get pixel texture upside down
+		glActiveTexture(GL_TEXTURE0);
+		glTexSubImage2D(GL_TEXTURE_2D, 0, x, 0, WIDTH-1, 1, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+		glMemoryBarrier(GL_ALL_BARRIER_BITS);
+//		fwrite(pixels,WIDTH*4,1,out);	//Won't work, due to ALPHA.
+		for(int j=0; j < WIDTH; j++){
+			fprintf(out,"%c%c%c",pixels[j++],pixels[j++],pixels[j++]);	
+			//j++;	//Alpha
+		}
+		//fprintf(out,"\n")
+	}
+
+	#endif 
+	*/
+	fclose(out);
+	Exit=true;
+}
+#endif
 void Render(){
 //	if(update){
 //	update=false;
@@ -341,7 +364,8 @@ int main(int argc, char * argv[]){
 	#endif
 	{ //Main loop.
 		Render();
-    	glfwSwapBuffers(window);
+		if(Exit){break;}	//Exit if need be.
+    		glfwSwapBuffers(window);
 		#ifndef RUN_TEST
 		//usleep(100);
 		glfwPollEvents();
