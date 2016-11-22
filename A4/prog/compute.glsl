@@ -336,6 +336,10 @@ vec4 rtrace(ray cray){
 //		colour *= 0.2;
 	////////////////////Diffuse Lights/////////////////////
 
+
+	vec4 c_scaler = vec4(ambient,0);	//Set-up minimum of ambient.
+	vec4 p_scaler;
+
 	shadow = true;
 	if(scnt == 0){	//If not in shadow
 	int cnt;
@@ -354,18 +358,21 @@ vec4 rtrace(ray cray){
 
 //			colour = vec4(surface_norm,0);		//Display the norm
 			//DIFFUSE
-			colour = colour * vec4((ambient + obj_colour(i)*max(0,dot(sray.direction,surface_norm))),0);
+			c_scaler = vec4((ambient + obj_colour(i)*max(0,dot(sray.direction,surface_norm))),0);
+//			colour = colour * vec4((ambient + obj_colour(i)*max(0,dot(sray.direction,surface_norm))),0);
 			//PHONG
 			vec3 h = (-cray.direction + sray.direction);
 			h /= length(h);
-			colour += vec4(obj_colour(i)*obj_pcolour(int(res.y))*pow(max(0,dot(surface_norm,h)),obj_phong(i)),0);
+			p_scaler = vec4(obj_colour(i)*obj_pcolour(int(res.y))*pow(max(0,dot(surface_norm,h)),obj_phong(i)),0);
+//			colour += vec4(obj_colour(i)*obj_pcolour(int(res.y))*pow(max(0,dot(surface_norm,h)),obj_phong(i)),0);
 
 		}
 		}
 	}
 	}
 
-
+//	colour = (colour * vec4(c_scaler)) + vec4(p_scaler);
+	
 	return(colour);
 }
 void main(){

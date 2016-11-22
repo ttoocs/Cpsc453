@@ -28,7 +28,6 @@ void main(void)
 	coord.x = coord.x + 1f;
 	coord.y = coord.y + 1f;
 
-
 	coord.x /= 2;
 	coord.y /= 2;
 

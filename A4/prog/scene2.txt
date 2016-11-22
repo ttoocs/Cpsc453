@@ -24,6 +24,10 @@
 # Feel free to modify or extend this scene file to your desire
 # as you complete your ray tracing system.
 # ============================================================
+ambient {
+ 0 0 0
+}
+
 
 light {
   1 1 1
