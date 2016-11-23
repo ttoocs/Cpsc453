@@ -37,7 +37,7 @@ uint 	gl_LocalInvocationID
 #define OBJ_SETV3(X,Y,Z)  OBJ_DATA(X,Y)=Z.x; OBJ_DATA(X,Y)=Z.y; OBJ_DATA(X,Y)=Z.z;
 
 #define obj_type(X) 		OBJ_DATA(X,0)
-//#define obj_colour(X) 		OBJ_TOVEC3(X,1)
+#define obj_colour(X) 		OBJ_TOVEC3(X,1)
 #define obj_pcolour(X) 		OBJ_TOVEC3(X,4)
 #define obj_velc(X)   		OBJ_TOVEC3(7)
 #define obj_phong(X)   		OBJ_DATA(X,10)
@@ -83,7 +83,7 @@ vec4 colour = vec4(0);
 bool shadow = false;
 
 //uniform mat4x2  cam = mat4x2(0,0,0,PI/3,0,0,0,0);
-vec4 cam = vec4(0,0,0,PI/3);
+vec4 cam = vec4(0,0,0,PI/3); //
 
 layout(local_size_x = 1, local_size_y = 1) in;
 
@@ -298,7 +298,7 @@ int hitobj;
 
 vec4 rtrace(ray cray){
 
-	vec4 c;
+	vec4 c=vec4(0);
 	//////////////////BASIC RAY-TRACING///////////////////
 	shadow=false;
 	vec4 res = test_objects_intersect(cray);
@@ -317,7 +317,7 @@ vec4 rtrace(ray cray){
 	#else
 	hitobj = int(res.y);
 	newray.direction = normalize(reflect(cray.direction, surface_norm));
-	newray.origin = hitpos + newray.direction*0.04;
+	newray.origin = hitpos + newray.direction*0.001;
 	#endif
 	
 	///////////////////BASIC SHADOWS////////////////////////////////
@@ -329,7 +329,8 @@ vec4 rtrace(ray cray){
 	shadow = true;
 	vec3 svect;
 	float svlen;
-	for(int i=0; i < num_objs ; i++){
+
+/*	for(int i=0; i < num_objs ; i++){
 		if(obj_type(i) == T_LIGHT){
 			lcnt++;
 			svect = light_p(i) - hitpos;
@@ -349,15 +350,18 @@ vec4 rtrace(ray cray){
 //	if(scnt != 0)
 //		c *= ((lcnt-scnt)/lcnt);		//Apply shadows.
 //		c *= 0.2;
+
+	//Hard shadows
+	*/
 	////////////////////Diffuse Lights/////////////////////
 
 
 	vec4 c_scaler = vec4(ambient,0);	//Set-up minimum of ambient.
 	vec4 p_scaler = vec4(0);
-
+	
 	shadow = true;
-//	if(scnt == 0){	//If not in shadow
 	int cnt;
+	if(hitobj != T_NONE){
 	for(int i=0; i < num_objs ; i++){
 	if(obj_type(i) == T_LIGHT){
 		cnt++;
@@ -376,17 +380,19 @@ vec4 rtrace(ray cray){
 			c_scaler += vec4((obj_colour(i)*max(0,dot(sray.direction,surface_norm))),0);
 //			colour = colour * vec4((ambient + obj_colour(i)*max(0,dot(sray.direction,surface_norm))),0);
 			//PHONG
-			vec3 h = (-cray.direction + sray.direction);
-			h /= length(h);
-			p_scaler += vec4(obj_colour(i)*obj_pcolour(int(res.y))*pow(max(0,dot(surface_norm,h)),obj_phong(i)),0);
+			vec3 h = normalize((-cray.direction + sray.direction));
+			float a = max(0,(dot(h,surface_norm)));
+			p_scaler += vec4( pow(a,obj_phong(hitobj)) * obj_colour(i)  ,0  );
+//			p_scaler += vec4(clamp(pow(max(0,dot(h,surface_norm)),obj_phong(int(res.y))),0,1)) * vec4(obj_colour(i),0); 
+//			p_scaler += vec4(obj_pcolour(i)*  obj_pcolour(int(res.y)),0) * vec4(pow(max(0,(dot(surface_norm,h))),obj_phong(i)),0);
 //			colour += vec4(obj_colour(i)*obj_pcolour(int(res.y))*pow(max(0,dot(surface_norm,h)),obj_phong(i)),0);
 
 		}
 		}
 	}
-//	}
+	}
 
-	c = (c * vec4(c_scaler)) + vec4(p_scaler);	
+	c = (c * vec4(c_scaler)) + vec4(p_scaler);
 	return(c);
 }
 void main(){
@@ -401,7 +407,6 @@ void main(){
 	
 	vec4 colour = vec4(0);
 
-//	vec2 coords = vec2(gl_GlobalInvocationID.xy)/256;
 	vec2 coords = vec2(gl_GlobalInvocationID.xy);
 	coords = coords / vec2(dims.xy/2);
 	coords = coords + vec2(-1);
@@ -461,20 +466,37 @@ void main(){
 
 #ifndef stack_reflect
 
-#define reflect_by_num 1
+//#define reflect_by_num 2
+
+#ifdef susant_ref	
+	c2 = rtrace(newray);			//Works:
+	ref_pwr*=obj_reflec(hitobj);
+	colour += c2 * (1-ref_pwr);
+#endif
 	#ifdef reflect_by_num
 	for(int i=0; i < reflect_by_num ; i ++){
 	#else
-	while(ref_pwr >= EPSILON){
+	while(ref_pwr >= EPSILON/10){
 	#endif
 //		c2 = rtrace(newray);
 //		ref_pwr*=obj_reflec(hitobj);				//Attempt at recursion-less.
 //		colour = (colour - c2*ref_pwr)/(1-ref_pwr);
-		
-		c2 = rtrace(newray);			//Works:
-		ref_pwr*=obj_reflec(hitobj);
-		colour += c2 * (1-ref_pwr);
 
+#ifdef sustant_ref
+		c2 = rtrace(newray);					//Works:
+		colour += c2 * (1-ref_pwr) * obj_reflec(hitobj);	
+		ref_pwr*=obj_reflec(hitobj);
+#else
+		c2 = rtrace(newray);			//Works:
+		if(hitobj == T_NONE)
+			break;
+		colour += c2 * (ref_pwr) * (1-obj_reflec(hitobj));
+		ref_pwr*=obj_reflec(hitobj);
+#endif
+
+//		colour += clamp(c2 * (1-ref_pwr),0,1);			//Slow down, not always neccsissary
+//		if(obj_reflec(hitobj) == 0)
+//			break;
 //		if(hitobj == T_NONE)
 //			break;			//Quit checking if we hit nothing.
 	}

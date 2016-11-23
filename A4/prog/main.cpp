@@ -24,19 +24,20 @@
 #include "gl_helpers.cpp"
 #include "parser.cpp"
 
-#define WIDTH 512*2
-#define HEIGHT 512*2
+#define WIDTH 512*1
+#define HEIGHT 512*1
 
 #define V_PUSH(X,a,b,c) X.push_back(a); X.push_back(b); X.push_back(c);
 
-#define PPM_OUT 1
-#define RUN_TEST 10
-//#define ssbo_ref
+//#define PPM_OUT 1
+//#define RUN_TEST 1
+///#define ssbo_ref
 
 using namespace std;
 int scene=1;
 bool initalized=false;
 int particles= 0;
+
 bool update = true;
 bool Exit = false;
 
@@ -182,6 +183,7 @@ void changeScene(){
 	int z = floor(sqrt(particles));
 	for(int i=0; i<=z ; i++){
 		for(int j=0; j<=z ; j++){
+			int pcnt=0;
 			objects.push_back(T_PARTICLE);
 			float x;
 			float y;
@@ -192,13 +194,24 @@ void changeScene(){
 			x -= 1;
 			y -= 1;
 			V_PUSH(objects,0,0.5,0.5);	//Cyan color
-			V_PUSH(objects,x,y,-0.5);		//Position
-			objects.push_back(0.02);
+			pcnt+=3;
+			V_PUSH(objects,0,0.5,0.5);	//Cyan color
+			pcnt+=3;
 			V_PUSH(objects,0,0,-0.01f);	//Velocity
+			pcnt+=3;
+			objects.push_back(0.02);	//Phong
+			pcnt++;
+			objects.push_back(1);		//Reflective
+			pcnt++;
+			V_PUSH(objects,x,y,-0.5);		//Position
+			pcnt+=3;
+			objects.push_back(0.02);	//Radius
+			pcnt++;
+			while(pcnt < OBJSIZE){
+				pcnt++;
+				objects.push_back(0);
+			}
 //			cout << x << ":" << y << endl;
-			objects.push_back(0);
-			objects.push_back(0);
-//			objects.push_back(0);
 		}
 	}
 	objects.data()[0] = (objects.size()/OBJSIZE);
@@ -326,6 +339,8 @@ void Render(){
 
 	glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 //	if(out_num++ == 10)
+//
+	#ifndef RUN_TEST
 	#ifdef PPM_OUT
 		to_ppm();	 
 	#else
@@ -338,8 +353,9 @@ void Render(){
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, glstuff.tex_output);
 	glDrawArrays(GL_TRIANGLE_STRIP,0,4);
-
 	#endif
+	#endif
+
 //	}
 
 	return;
@@ -378,6 +394,9 @@ int main(int argc, char * argv[]){
 	#ifdef RUN_TEST
 	double endTime = glfwGetTime();
 	cout << "Test run for " << RUN_TEST << " frames is " << endTime-initTime << endl;
+	#ifdef PPM_OUT
+		to_ppm();	 
+	#endif
 	#endif
 
 	glfwTerminate();	//Kill the glfw interface
