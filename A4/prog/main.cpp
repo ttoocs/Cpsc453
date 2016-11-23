@@ -21,7 +21,7 @@
 #include <stdlib.h>
 #include <math.h>
 
-#define PI 3.1415926535
+#define PI 3.1415926535897939
 
 #include "gl_helpers.cpp"
 #include "parser.cpp"
@@ -37,7 +37,7 @@
 
 
 using namespace std;
-int scene=1;
+int scene=0;
 bool initalized=false;
 int particles= 0;
 
@@ -57,10 +57,10 @@ void recalc_trans(GLfloat newtheta){
 	trans[2][0]=sin(theta);
 	trans[2][2]=cos(theta);
 
-	GLfloat newoff[3] = {
-		offset[0]*cos(newtheta)+offset[2]*sin(newtheta),
-		offset[1],
-		-offset[0]*sin(newtheta)+offset[2]*cos(newtheta)};
+//	GLfloat newoff[3] = {
+//		offset[0]*cos(newtheta)+offset[2]*sin(newtheta),
+//		offset[1],
+//		-offset[0]*sin(newtheta)+offset[2]*cos(newtheta)};
 //		offset[2]};
 //	offset[0]=newoff[0];
 //	offset[1]=newoff[1];	//Could be done better, but alas.
@@ -82,7 +82,8 @@ void reset_trans(){
 	recalc_trans(-theta);
 	offset[0]=0;
 	offset[1]=0;
-	offset[2]=0;
+	offset[2]=6;
+	FOV = PI/6;
 }
 
 
@@ -110,7 +111,7 @@ GLSTUFF glstuff;
 
 void set_uniforms(){
 	glUseProgram(glstuff.cprog);
-	cout << "updating uniforms" << endl;
+//	cout << "updating uniforms" << endl;
 	GLuint uniFOV,uniOff,uniTrans;
 
 	uniFOV =   glGetUniformLocation(glstuff.cprog,"FOV");
@@ -215,7 +216,8 @@ void changeScene(){
 
 		//Update stuff
 
-	reset_trans();	
+	reset_trans();
+	set_uniforms();	
 	//cout << objects.data()[0] << endl;
 	//TEST-HACK FOR DATA_PASSTHROUGH
 	//objects.clear();
@@ -295,18 +297,16 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
     float addoffset[3]={0,0,0};
     if(key == GLFW_KEY_W){
 	addoffset[2]-=step;	//FORWARD/BACK
-	cout << "Z: " << offset[2] << endl;
+//	cout << "Z: " << offset[2] << endl;
     }	
     if(key == GLFW_KEY_S){
 	addoffset[2]+=step;
-	cout << "Z: " << offset[2] << endl;
+//	cout << "Z: " << offset[2] << endl;
     }
     if(key == GLFW_KEY_A){
-// 	offset[1]-=step;	//LEFT/RIGHT (S
  	recalc_trans(step/PI);
     }
     if(key == GLFW_KEY_D){
-//	offset[1]+=step;
 	recalc_trans(-step/PI);
     }
     if(key == GLFW_KEY_Q){
@@ -317,11 +317,11 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
     }
     if(key == GLFW_KEY_R){
 	FOV-=step/PI;		//FOV
-	cout << FOV << endl;
+//	cout << FOV << endl;
     }
     if(key == GLFW_KEY_F){
 	FOV+=step/PI;
-	cout << FOV << endl;
+//	cout << FOV << endl;
     }
     if(key == GLFW_KEY_P){
 	particles++;
@@ -428,6 +428,7 @@ int main(int argc, char * argv[]){
 	glfwSetKeyCallback(window, KeyCallback);
 
 	changeScene();	//Load up a scene!
+	set_uniforms();
 
 	#ifdef RUN_TEST 
 	cout << "Running a test with " << RUN_TEST << " frames." << endl;
