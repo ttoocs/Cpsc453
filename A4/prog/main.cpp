@@ -30,7 +30,7 @@
 #define V_PUSH(X,a,b,c) X.push_back(a); X.push_back(b); X.push_back(c);
 
 //#define PPM_OUT 1
-#define RUN_TEST 10
+//#define RUN_TEST 10
 ///#define ssbo_ref
 
 using namespace std;
@@ -201,11 +201,11 @@ void changeScene(){
 			pcnt+=3;
 			objects.push_back(1);	//Phong
 			pcnt++;
-			objects.push_back(0);		//Reflective
+			objects.push_back(1);		//Reflective
 			pcnt++;
 			V_PUSH(objects,x,y,-0.5);		//Position
 			pcnt+=3;
-			objects.push_back(0.2);	//Radius
+			objects.push_back(0.002);	//Radius
 			pcnt++;
 			while(pcnt < OBJSIZE){
 				pcnt++;
