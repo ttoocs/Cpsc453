@@ -24,8 +24,8 @@
 #include "gl_helpers.cpp"
 #include "parser.cpp"
 
-#define WIDTH 512
-#define HEIGHT 512
+#define WIDTH 512*4
+#define HEIGHT 512*4
 
 #define V_PUSH(X,a,b,c) X.push_back(a); X.push_back(b); X.push_back(c);
 
@@ -36,14 +36,31 @@
 using namespace std;
 int scene=1;
 bool initalized=false;
-int particles= 4;
+int particles= 0;
 
 bool update = true;
 bool Exit = false;
 
-float camera[8];
-float step = 0.1;
+Glfloat step = 0.1;
+GLfloat trans[3][3] = {{1,0,0},{0,1,0},{0,0,1}};
+GLfloat offset[3] = {0,0,0}
+GLfloat theta = 0;
 
+void recalc_trans(GLfloat newtheta){
+	theta += newtheta;
+	trans[0][0]=cos(theta);
+	trans[0][1]=-sin(theta);
+	trans[1][0]=sin(theta);
+	trans[1][1]=cos(theta);
+
+	GLfloat newoff[3] = {
+		offset[0]*cos(newtehta)+offset[1]*sin(newtheta),
+		-offset[0]*sin(newtheta)+offset[1]*cos(newtheta),
+		offset[2]}
+	offset[0]=newoff[0];
+	offset[1]=newoff[1];	//Could be done better, but alas.
+	offset[3]=newoff[3];
+}
 
 GLfloat vertices[]={
 	-1,	1,
@@ -205,7 +222,7 @@ void changeScene(){
 			pcnt++;
 			V_PUSH(objects,x,y,-0.5);		//Position
 			pcnt+=3;
-			objects.push_back(0.002);	//Radius
+			objects.push_back(0.04);	//Radius
 			pcnt++;
 			while(pcnt < OBJSIZE){
 				pcnt++;
@@ -255,29 +272,32 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
     if(key == GLFW_KEY_X)
 	step += 0.01;
     if(key == GLFW_KEY_W){
-	camera[0]+=step;	//FORWARD/BACK
+	offset[0]+=step;	//FORWARD/BACK
     }	
     if(key == GLFW_KEY_S){
-	camera[0]-=step;
+	offset[0]-=step;
     }
     if(key == GLFW_KEY_A){
- 	camera[1]-=step;	//LEFT/RIGHT
+// 	offset[1]-=step;	//LEFT/RIGHT (S
+ 	recalc_trans(-step/PI);
     }
     if(key == GLFW_KEY_D){
-	camera[1]+=step;
+//	offset[1]+=step;
+	recalc_trans(step/PI);
     }
     if(key == GLFW_KEY_Q){
-	camera[2]-=step;	//UP/DOWN
+	offset[2]-=step;	//UP/DOWN
     }
     if(key == GLFW_KEY_E){
-	camera[2]+=step;
+	offset[2]+=step;
     }
     if(key == GLFW_KEY_R){
-	camera[3]+=step;	//FOV
+	offset[3]+=step;	//FOV
     }
     if(key == GLFW_KEY_F){
-	camera[3]-=step;
+	offset[3]-=step;
     }
+
 }
 
 //	#ifdef PPM_OUT

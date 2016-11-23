@@ -419,6 +419,10 @@ vec4 rtrace(ray cray){
 	c = (c * vec4(c_scaler)) + vec4(p_scaler);
 	return(c);
 }
+
+uniform vec3 offset;
+uniform mat3 transform;
+
 void main(){
 	
 //	vec4 cam = vec4(0,0,0,PI/3);
@@ -435,9 +439,15 @@ void main(){
 	coords = coords / vec2(dims.xy/2);
 	coords = coords + vec2(-1);
 
+
+	//TRANSFORMATIONS
+		
+
+
 	/////////////////REFLECTIONS////////////////////////////////
 
-	#ifdef ssbo_ref
+	#ifdef ssbo_ref	
+	//Sadly, this never worked, as I could not initalize data properly.
 //	colour = vec4(abs(ref_state.w/1));	
 //	if(ref_state.w == 0){	//NOT ALWAYS SET TO ZERO?
 		get_rray.data.x = 1;
