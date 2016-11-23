@@ -14,7 +14,7 @@ uint 	gl_LocalInvocationID
 
 
 #define OBJSIZE 21
-#define T_NONE 7
+#define T_NONE -7
 #define T_TRI 1
 #define T_LIGHT 2
 #define T_SPHERE 3
@@ -34,21 +34,24 @@ uint 	gl_LocalInvocationID
 #define OBJ_ADDR(X,Y) OBJ_BADDR(X)+Y
 #define OBJ_DATA(X,Y) OBJ[OBJ_ADDR(X,Y)]
 #define OBJ_TOVEC3(X,Y) vec3(OBJ_DATA(X,Y),OBJ_DATA(X,Y+1),OBJ_DATA(X,Y+2))
-#define OBJ_SETV3(X,Y,Z)  OBJ_DATA(X,Y)=Z.x; OBJ_DATA(X,Y)=Z.y; OBJ_DATA(X,Y)=Z.z;
+#define OBJ_SETV3(X,Y,Z)  OBJ_DATA(X,Y)=Z.x; OBJ_DATA(X,Y+1)=Z.y; OBJ_DATA(X,Y+2)=Z.z;
+
 
 #define obj_type(X) 		OBJ_DATA(X,0)
 #define obj_colour(X) 		OBJ_TOVEC3(X,1)
 #define obj_pcolour(X) 		OBJ_TOVEC3(X,4)
-#define obj_velc(X)   		OBJ_TOVEC3(7)
+#define obj_velc(X)   		OBJ_TOVEC3(X,7)
 #define obj_phong(X)   		OBJ_DATA(X,10)
 #define obj_reflec(X)		OBJ_DATA(X,11)
 #define OBJ_LOCD		12
 
 #define OBJ_DATAL(X,Y)		OBJ_DATA(X,(OBJ_LOCD+Y))
 #define OBJ_TOVEC3L(X,Y)	OBJ_TOVEC3(X,(OBJ_LOCD+Y))
+#define OBJ_SETV3L(X,Y,Z)	OBJ_SETV3(X,(OBJ_LOCD+Y),Z)
 
 #define sphere_c(X) OBJ_TOVEC3L(X,0)
 #define sphere_r(X) OBJ_DATAL(X,3)
+#define sphere_setc(X,Y) OBJ_SETV3L(X,0,Y)
 
 #define tri_p1(X) OBJ_TOVEC3L(X,0)
 #define tri_p2(X) OBJ_TOVEC3L(X,3)
@@ -117,12 +120,33 @@ vec3 obj_colour(int X){
 	
 }
 #endif
+
+void obj_move(int obj){
+	switch(int(obj_type(obj))){
+		case T_TRI:
+			//TODO	
+			return;
+		case T_PLANE:
+			//TODO
+			return;
+		case T_SPHERE:
+		case T_POINT:
+		case T_LIGHT:
+		case T_PARTICLE:
+			vec3 pos = sphere_c(obj) + obj_velc(obj);
+			sphere_setc(obj,pos);
+			return; 
+	}
+
+}
+
+
 void set_error(int type){
 	if(ERROR ==0)
 		ERROR=type;
 }
 void error_out(ivec2 pixel_coords){	
-	vec4 c = vec4(1,1,0,1);
+	vec4 c = vec4(1,1,1,1);
 /*	switch(ERROR){
 		case (E_OTHER):
 			c=vec4(0,0,1,0);
@@ -262,7 +286,7 @@ vec4 test_objects_intersect(ray r){ //Tests _ALL_ objects
 	int i = 0;
 	for(i=0; i < num_objs ; i++ ){
 		t = test_object_intersect(r,i);
-		if( ( ret.x < 0 ||  t < ret.x ) && t >= 0  ){
+		if( ( ret.x < 0 ||  t < ret.x ) && t > 0  ){
 			ret.x = t; //Distance
 			ret.y = i; //Object
 		}		
@@ -284,7 +308,7 @@ vec3 get_surface_norm(vec3 hitpos, uint obj){
 		case T_LIGHT:
 			return vec3(0);
 		case T_PARTICLE:
-			return vec3(0);
+			return normalize(hitpos-sphere_c(obj));
 		case T_NONE:
 			return vec3(0);
 
@@ -306,7 +330,7 @@ vec4 rtrace(ray cray){
 		c = vec4(obj_colour(int(res.y)),0);
 
 	vec3 hitpos = res.x * cray.direction + cray.origin;
-
+	
 	//UPDATE THINGS FOR FUTURE USE./////////////////////////////////
 
 	vec3 surface_norm  = get_surface_norm(hitpos, int(res.y));	
@@ -317,7 +341,7 @@ vec4 rtrace(ray cray){
 	#else
 	hitobj = int(res.y);
 	newray.direction = normalize(reflect(cray.direction, surface_norm));
-	newray.origin = hitpos + newray.direction*0.001;
+	newray.origin = hitpos + newray.direction*0.01;
 	#endif
 	
 	///////////////////BASIC SHADOWS////////////////////////////////
@@ -361,7 +385,7 @@ vec4 rtrace(ray cray){
 	
 	shadow = true;
 	int cnt;
-	if(hitobj != T_NONE){
+	if(hitobj != T_NONE && (1-obj_reflec(hitobj)) >= BEPSILON){
 	for(int i=0; i < num_objs ; i++){
 	if(obj_type(i) == T_LIGHT){
 		cnt++;
@@ -411,18 +435,7 @@ void main(){
 	coords = coords / vec2(dims.xy/2);
 	coords = coords + vec2(-1);
 
-	//Red-green-ness	
-//	colour = vec4(abs(coords),0,0);
-//	colour = (vec4(ray_intersect_sphere(cray,0)!=-1));
-//	colour = (vec4(ray_intersect_triangle(cray,1)!=-1));	//Test ray intersects (scene3)
-//	colour = (vec4(1/(ray_intersect_plane(cray,2))));
-
 	/////////////////REFLECTIONS////////////////////////////////
-	/// 
-	// Check: The coeffishent is in get_rray.data.x
-	//		Update said coeffishent as needed
-	//		
-	//		Add to colour
 
 	#ifdef ssbo_ref
 //	colour = vec4(abs(ref_state.w/1));	
@@ -438,8 +451,7 @@ void main(){
 
 		colour = rtrace(cray) * (1-get_rray.data.x); //IS GOOD.
 		ref_state.w = 1;
-//	}
-		
+//	}	
 //	else if(ref_state.w == 1){
 //		colour = imageLoad(img_output, pixel_coords); //Load a colour.
 //		ref_state.w++;
@@ -457,60 +469,34 @@ void main(){
 
 	newray.direction = vec3(coords, -1/tan(cam.w/2));
 	newray.origin = vec3(cam.xyz);
-//	newray.origin = vec3(cam[0][0],cam[0][1],cam[0][2]);
-//	newray.direction = vec3(coords, -1/tan(PI/6));	//INITAL SETUP
-//	newray.direction = //TRANSPOSE THE LOOK-DIR
 	newray.direction = normalize(newray.direction);
 
-//#define stack_reflect 10
+	//#define stack_reflect 10
 
 #ifndef stack_reflect
 
-//#define reflect_by_num 2
+//	#define reflect_by_num 2
 
-#ifdef susant_ref	
-	c2 = rtrace(newray);			//Works:
-	ref_pwr*=obj_reflec(hitobj);
-	colour += c2 * (1-ref_pwr);
-#endif
 	#ifdef reflect_by_num
 	for(int i=0; i < reflect_by_num ; i ++){
 	#else
-	while(ref_pwr >= EPSILON/10){
+	while(ref_pwr >= 0.01){
 	#endif
-//		c2 = rtrace(newray);
-//		ref_pwr*=obj_reflec(hitobj);				//Attempt at recursion-less.
-//		colour = (colour - c2*ref_pwr)/(1-ref_pwr);
-
-#ifdef sustant_ref
-		c2 = rtrace(newray);					//Works:
-		colour += c2 * (1-ref_pwr) * obj_reflec(hitobj);	
-		ref_pwr*=obj_reflec(hitobj);
-#else
 		c2 = rtrace(newray);			//Works:
-		if(hitobj == T_NONE)
-			break;
 		colour += c2 * (ref_pwr) * (1-obj_reflec(hitobj));
 		ref_pwr*=obj_reflec(hitobj);
-#endif
-
-//		colour += clamp(c2 * (1-ref_pwr),0,1);			//Slow down, not always neccsissary
-//		if(obj_reflec(hitobj) == 0)
-//			break;
-//		if(hitobj == T_NONE)
-//			break;			//Quit checking if we hit nothing.
+		if(hitobj == T_NONE)
+			break;
 	}
+//	colour = vec4(hitobj==7);
 		
-//	colour *= 0.5;
 		
 #else
 	//Stack based-recursion.
 	vec4 Cstack[stack_reflect];
-//	float Rstack[stack_reflect];
 
 	for(int i=0; i < stack_reflect ; i++){
 		Cstack[i]=vec4(rtrace(newray).xyz,obj_reflec(hitobj));
-//		Cstack[i].w=obj_reflec(hitobj);
 	}
 	for(int i=stack_reflect-1 ; i >= 0 ; i--){
 		colour.xyz =  mix(Cstack[i].xyz, colour.xyz, Cstack[i].w); 
@@ -520,12 +506,9 @@ void main(){
 
 #endif
 	//MOVES PARTICLES. NOTE: NO COLLISONS YET.
-//	if(pixel_coords.y == 0 && pixel_coords.x <= num_objs && obj_type(pixel_coords.x) == T_PARTICLE){
-//		OBJ_DATA(pixel_coords.x,4) += OBJ_DATA(pixel_coords.x,8);
-//		OBJ_DATA(pixel_coords.x,5) += OBJ_DATA(pixel_coords.x,9);
-//		OBJ_DATA(pixel_coords.x,6) += OBJ_DATA(pixel_coords.x,10);
-//		OBJ_SETV3(pixel_coords.x,4,vec3(sphere_c(pixel_coords.x) + OBJ_TOVEC3(pixel_coords.x,8)));
-//	}
+	if(pixel_coords.y == 0 && pixel_coords.x <= num_objs && obj_type(pixel_coords.x) == T_PARTICLE){
+		obj_move(pixel_coords.x);
+	}
 
 	//Corrisponding test-hack for data passthrough
 //	colour = vec4(objs[pixel_coords.x],-objs[pixel_coords.y],0,0)/5;	

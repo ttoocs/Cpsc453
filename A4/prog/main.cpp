@@ -24,19 +24,19 @@
 #include "gl_helpers.cpp"
 #include "parser.cpp"
 
-#define WIDTH 512*1
-#define HEIGHT 512*1
+#define WIDTH 512
+#define HEIGHT 512
 
 #define V_PUSH(X,a,b,c) X.push_back(a); X.push_back(b); X.push_back(c);
 
 //#define PPM_OUT 1
-//#define RUN_TEST 1
+#define RUN_TEST 10
 ///#define ssbo_ref
 
 using namespace std;
 int scene=1;
 bool initalized=false;
-int particles= 0;
+int particles= 4;
 
 bool update = true;
 bool Exit = false;
@@ -183,7 +183,7 @@ void changeScene(){
 	int z = floor(sqrt(particles));
 	for(int i=0; i<=z ; i++){
 		for(int j=0; j<=z ; j++){
-			int pcnt=0;
+			int pcnt=1;
 			objects.push_back(T_PARTICLE);
 			float x;
 			float y;
@@ -199,13 +199,13 @@ void changeScene(){
 			pcnt+=3;
 			V_PUSH(objects,0,0,-0.01f);	//Velocity
 			pcnt+=3;
-			objects.push_back(0.02);	//Phong
+			objects.push_back(1);	//Phong
 			pcnt++;
-			objects.push_back(1);		//Reflective
+			objects.push_back(0);		//Reflective
 			pcnt++;
 			V_PUSH(objects,x,y,-0.5);		//Position
 			pcnt+=3;
-			objects.push_back(0.02);	//Radius
+			objects.push_back(0.2);	//Radius
 			pcnt++;
 			while(pcnt < OBJSIZE){
 				pcnt++;
@@ -280,7 +280,7 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
     }
 }
 
-	#ifdef PPM_OUT
+//	#ifdef PPM_OUT
 unsigned char *pixels;
 int out_num=0;
 void to_ppm(){
@@ -330,7 +330,7 @@ void to_ppm(){
 	fclose(out);
 	Exit=true;
 }
-#endif
+//#endif
 void Render(){
 //	if(update){
 //	update=false;
@@ -340,7 +340,7 @@ void Render(){
 	glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 //	if(out_num++ == 10)
 //
-	#ifndef RUN_TEST
+//	#ifndef RUN_TEST
 	#ifdef PPM_OUT
 		to_ppm();	 
 	#else
@@ -354,7 +354,7 @@ void Render(){
 	glBindTexture(GL_TEXTURE_2D, glstuff.tex_output);
 	glDrawArrays(GL_TRIANGLE_STRIP,0,4);
 	#endif
-	#endif
+//	#endif
 
 //	}
 
@@ -394,9 +394,9 @@ int main(int argc, char * argv[]){
 	#ifdef RUN_TEST
 	double endTime = glfwGetTime();
 	cout << "Test run for " << RUN_TEST << " frames is " << endTime-initTime << endl;
-	#ifdef PPM_OUT
+//	#ifdef PPM_OUT
 		to_ppm();	 
-	#endif
+//	#endif
 	#endif
 
 	glfwTerminate();	//Kill the glfw interface
