@@ -125,6 +125,7 @@ std::vector<GLfloat> parse(std::string filename){
 	}
 	cout << endl;
 	#endif
+
 	
 	return(data);
 }

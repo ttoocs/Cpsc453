@@ -21,17 +21,20 @@
 #include <stdlib.h>
 #include <math.h>
 
+#define PI 3.1415926535
+
 #include "gl_helpers.cpp"
 #include "parser.cpp"
 
-#define WIDTH 512*4
-#define HEIGHT 512*4
+#define WIDTH 512*1
+#define HEIGHT 512*1
 
 #define V_PUSH(X,a,b,c) X.push_back(a); X.push_back(b); X.push_back(c);
 
 //#define PPM_OUT 1
 //#define RUN_TEST 10
 ///#define ssbo_ref
+
 
 using namespace std;
 int scene=1;
@@ -41,26 +44,47 @@ int particles= 0;
 bool update = true;
 bool Exit = false;
 
-Glfloat step = 0.1;
+GLfloat step = 0.1;
 GLfloat trans[3][3] = {{1,0,0},{0,1,0},{0,0,1}};
-GLfloat offset[3] = {0,0,0}
-GLfloat theta = 0;
+GLfloat offset[3] = {0,0,0};
+GLfloat theta = 0.f;
+GLfloat FOV = PI/6.f;
 
 void recalc_trans(GLfloat newtheta){
 	theta += newtheta;
 	trans[0][0]=cos(theta);
-	trans[0][1]=-sin(theta);
-	trans[1][0]=sin(theta);
-	trans[1][1]=cos(theta);
+	trans[0][2]=-sin(theta);
+	trans[2][0]=sin(theta);
+	trans[2][2]=cos(theta);
 
 	GLfloat newoff[3] = {
-		offset[0]*cos(newtehta)+offset[1]*sin(newtheta),
-		-offset[0]*sin(newtheta)+offset[1]*cos(newtheta),
-		offset[2]}
-	offset[0]=newoff[0];
-	offset[1]=newoff[1];	//Could be done better, but alas.
-	offset[3]=newoff[3];
+		offset[0]*cos(newtheta)+offset[2]*sin(newtheta),
+		offset[1],
+		-offset[0]*sin(newtheta)+offset[2]*cos(newtheta)};
+//		offset[2]};
+//	offset[0]=newoff[0];
+//	offset[1]=newoff[1];	//Could be done better, but alas.
+//	offset[2]=newoff[2];
 }
+
+void add_offset(float addoffset[3]){
+	GLfloat newoff[3] = {
+		addoffset[0]*cos(theta)+addoffset[2]*sin(theta),
+		addoffset[1],
+		-addoffset[0]*sin(theta)+addoffset[2]*cos(theta)};
+	offset[0]+=newoff[0];
+	offset[1]+=newoff[1];	//Could be done better, but alas.
+	offset[2]+=newoff[2];
+	
+}
+
+void reset_trans(){
+	recalc_trans(-theta);
+	offset[0]=0;
+	offset[1]=0;
+	offset[2]=0;
+}
+
 
 GLfloat vertices[]={
 	-1,	1,
@@ -84,8 +108,21 @@ struct GLSTUFF{
 GLSTUFF glstuff;
 
 
+void set_uniforms(){
+	glUseProgram(glstuff.cprog);
+	cout << "updating uniforms" << endl;
+	GLuint uniFOV,uniOff,uniTrans;
 
-#define MAX_SCENE 2
+	uniFOV =   glGetUniformLocation(glstuff.cprog,"FOV");
+	uniOff =   glGetUniformLocation(glstuff.cprog,"offset");
+	uniTrans = glGetUniformLocation(glstuff.cprog,"transform");
+	
+	glUniform1f(uniFOV,FOV);
+	glUniform3fv(uniOff,1,offset);
+	glUniformMatrix3fv(uniTrans,1,0,*trans);
+}
+
+#define MAX_SCENE 3
 void changeScene(){
 	vector<GLfloat> objects;	
 	if(scene > MAX_SCENE)
@@ -99,6 +136,8 @@ void changeScene(){
 		objects = parse("scene2.txt");
 	}else if(scene == 2){
 		objects = parse("scene3.txt");
+	}else if(scene == 3){
+		objects = parse("scene4.txt");
 	}
 
 	if(!initalized){
@@ -172,20 +211,11 @@ void changeScene(){
 		glGenBuffers(1,&glstuff.ssbo);
 		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, glstuff.ssbo);
 		
-		
-#ifdef ssbo_ref
-		glGenBuffers(1,&glstuff.refbo);			//Reflection buffer
-		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, glstuff.refbo);
-		glBindBuffer(GL_SHADER_STORAGE_BUFFER, glstuff.refbo);
-		glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(GLfloat)*((4*3*WIDTH*HEIGHT)+4), NULL, GL_DYNAMIC_COPY);
-		glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0); // unbind
-		
-#endif 		
 	}
 
 		//Update stuff
 
-	
+	reset_trans();	
 	//cout << objects.data()[0] << endl;
 	//TEST-HACK FOR DATA_PASSTHROUGH
 	//objects.clear();
@@ -240,16 +270,6 @@ void changeScene(){
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0); // unbind
 	cout << objects.data()[0] << endl;
 
-#ifdef ssbo_ref
-	//Cause a refresh of reflections:
-//	GLfloat zero[(1+WIDTH*HEIGHT)*4*3];		//SEGFAULTS?
-	glBindBuffer(GL_SHADER_STORAGE_BUFFER, glstuff.refbo);
-	GLfloat zero[4] = {0.f,0.f,0.f,0.f};
-	glClearBufferData(GL_SHADER_STORAGE_BUFFER, GL_RGBA32F, GL_RGBA, GL_FLOAT, &zero);
-	
-	glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
-#endif
-	//update=true;
 }
 
 
@@ -271,32 +291,48 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
 	step -= 0.01;
     if(key == GLFW_KEY_X)
 	step += 0.01;
+
+    float addoffset[3]={0,0,0};
     if(key == GLFW_KEY_W){
-	offset[0]+=step;	//FORWARD/BACK
+	addoffset[2]-=step;	//FORWARD/BACK
+	cout << "Z: " << offset[2] << endl;
     }	
     if(key == GLFW_KEY_S){
-	offset[0]-=step;
+	addoffset[2]+=step;
+	cout << "Z: " << offset[2] << endl;
     }
     if(key == GLFW_KEY_A){
 // 	offset[1]-=step;	//LEFT/RIGHT (S
- 	recalc_trans(-step/PI);
+ 	recalc_trans(step/PI);
     }
     if(key == GLFW_KEY_D){
 //	offset[1]+=step;
-	recalc_trans(step/PI);
+	recalc_trans(-step/PI);
     }
     if(key == GLFW_KEY_Q){
-	offset[2]-=step;	//UP/DOWN
+	addoffset[1]+=step;	//
     }
     if(key == GLFW_KEY_E){
-	offset[2]+=step;
+	addoffset[1]-=step;
     }
     if(key == GLFW_KEY_R){
-	offset[3]+=step;	//FOV
+	FOV-=step/PI;		//FOV
+	cout << FOV << endl;
     }
     if(key == GLFW_KEY_F){
-	offset[3]-=step;
+	FOV+=step/PI;
+	cout << FOV << endl;
     }
+    if(key == GLFW_KEY_P){
+	particles++;
+	changeScene();
+    }
+    if(key == GLFW_KEY_L){
+	particles--;
+	changeScene();
+    }
+    add_offset(addoffset);
+    set_uniforms();
 
 }
 

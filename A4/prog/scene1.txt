@@ -38,6 +38,7 @@ ambient {
  0.6 0.6 0.6
 }
 
+
 light {
  0.2 0.2 0.2
  0.2 0.2 0.2
@@ -46,7 +47,6 @@ light {
  0
   0 2.5 -7.75
 }
-
 # Reflective grey sphere
 sphere {
  0.5 0.5 0.5

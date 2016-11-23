@@ -22,7 +22,7 @@ uint 	gl_LocalInvocationID
 #define T_POINT 5
 #define T_PARTICLE 6
 
-//Accsessor functions for objects.
+////////////////////////////////////////Accsessor functions for objects.
 
 #define OBJ objs
 //Offset by 1, for the object[] size.
@@ -35,7 +35,6 @@ uint 	gl_LocalInvocationID
 #define OBJ_DATA(X,Y) OBJ[OBJ_ADDR(X,Y)]
 #define OBJ_TOVEC3(X,Y) vec3(OBJ_DATA(X,Y),OBJ_DATA(X,Y+1),OBJ_DATA(X,Y+2))
 #define OBJ_SETV3(X,Y,Z)  OBJ_DATA(X,Y)=Z.x; OBJ_DATA(X,Y+1)=Z.y; OBJ_DATA(X,Y+2)=Z.z;
-
 
 #define obj_type(X) 		OBJ_DATA(X,0)
 #define obj_colour(X) 		OBJ_TOVEC3(X,1)
@@ -65,28 +64,16 @@ uint 	gl_LocalInvocationID
 
 #define get_rray ref_rays[(gl_GlobalInvocationID.x + gl_GlobalInvocationID.y*(imageSize (img_output)).x)]
 
-#define PI 3.14159265358793
+#define PI 3.141592653587939
 #define EPSILON 0.000001
-
-//#define ssbo_ref
+#define BEPSILON 0.001
+#define FUDGE 0.001
 
 struct ray{
 	vec3 origin;
 	vec3 direction;
 };
 
-#ifdef ssbo_ref
-struct RefRay{
-	ray 	r;
-	vec3 	data;
-};
-#endif
-
-vec4 colour = vec4(0);
-bool shadow = false;
-
-//uniform mat4x2  cam = mat4x2(0,0,0,PI/3,0,0,0,0);
-vec4 cam = vec4(0,0,0,PI/3); //
 
 layout(local_size_x = 1, local_size_y = 1) in;
 
@@ -96,30 +83,18 @@ layout(std430, binding = 1) buffer object_buffer{
 	float objs[];
 };
 
-#ifdef ssbo_ref
-layout(std430, binding = 2) buffer reflection_buffer{
-	vec4 ref_state;
-	RefRay ref_rays[];
-};
-#endif 
+uniform float FOV;
+uniform vec3 offset;
+uniform mat3 transform;
 
-int ERROR=0;
-#define E_OTHER 1
-#define E_TYPE 2
+//vec4 colour = vec4(0);
+bool check_light_hit = false;		// Weither or not to check lights.
+ray newray;			// A reflection ray.
+int hitobj;			// Last-hit object.
 
-#ifndef obj_colour
-vec3 obj_colour(int X){
-	vec3 v = OBJ_TOVEC3(X,1);
-	if(v.x == 0)
-		v.x = - obj_reflec(X);
-	if(v.y == 0)
-		v.y = - obj_reflec(X);
-	if(v.z == 0)
-		v.z = - obj_reflec(X);
-	return v;
-	
-}
-#endif
+
+//vec4 cam = vec4(0,0,0,PI/3); //
+
 
 void obj_move(int obj){
 	switch(int(obj_type(obj))){
@@ -137,22 +112,18 @@ void obj_move(int obj){
 			sphere_setc(obj,pos);
 			return; 
 	}
-
 }
+int ERROR=0;
+#define E_OTHER 1
+#define E_TYPE 2
 
 
 void set_error(int type){
-	if(ERROR ==0)
+	if(ERROR ==0)				//ONLY SET THE 1st ERROR.
 		ERROR=type;
 }
 void error_out(ivec2 pixel_coords){	
-	vec4 c = vec4(1,1,1,1);
-/*	switch(ERROR){
-		case (E_OTHER):
-			c=vec4(0,0,1,0);
-			break;
-
-	}*/
+	vec4 c = vec4(1,1,0,1);			//MAKE SCREEN YELLOW ON OBJECT ERROR
 	imageStore(img_output, pixel_coords, c);
 }
 
@@ -175,6 +146,7 @@ float ray_intersect_sphere(ray r, uint obj_ID){
 		return(t2);
 		
 }
+#define TEST_CULL
 float ray_intersect_triangle(ray r, uint obj){
 	//Möller–Trumbore algorithm
 	vec3 e1 = tri_p2(obj) - tri_p1(obj);	//SUB
@@ -226,7 +198,6 @@ float ray_intersect_plane(ray r, uint obj){
 
 }
 
-#define BEPSILON 0.001
 float ray_intersect_point(ray r, uint obj){
 	vec3 t= (-r.origin + light_p(obj));
 	t.x /= r.direction.x;
@@ -253,8 +224,6 @@ float ray_intersect_point(ray r, uint obj){
 
 }
 
-// unifrom float objets[];
-
 float test_object_intersect(ray r, uint obj){
 	switch(int(obj_type(obj))){
 		case T_TRI:
@@ -267,7 +236,7 @@ float test_object_intersect(ray r, uint obj){
 			return(-1);
 			//return ray_intersect_point(r,obj);
 		case T_LIGHT:
-			if(shadow==false)
+			if(check_light_hit==false)
 				return(-1);
 			else
 				return ray_intersect_point(r,obj);
@@ -315,118 +284,99 @@ vec3 get_surface_norm(vec3 hitpos, uint obj){
 	}
 }
 
-#ifndef ssbo_ref
-ray newray;
-int hitobj;
-#endif
 
 vec4 rtrace(ray cray){
 
 	vec4 c=vec4(0);
 	//////////////////BASIC RAY-TRACING///////////////////
-	shadow=false;
+	check_light_hit=false;
 	vec4 res = test_objects_intersect(cray);
 	if(res.x >= 0)
 		c = vec4(obj_colour(int(res.y)),0);
 
 	vec3 hitpos = res.x * cray.direction + cray.origin;
-	
-	//UPDATE THINGS FOR FUTURE USE./////////////////////////////////
-
 	vec3 surface_norm  = get_surface_norm(hitpos, int(res.y));	
-	#ifdef ssbo_ref
-	get_rray.r.origin = hitpos;
-	get_rray.r.direction = reflect(cray.direction, surface_norm);
-	get_rray.data.x *= obj_reflec(int(res.y));
-	#else
+	
+	/////////////////////////////UPDATE GLOBALS FOR REFLECTIONS//////////////
+
 	hitobj = int(res.y);
 	newray.direction = normalize(reflect(cray.direction, surface_norm));
-	newray.origin = hitpos + newray.direction*0.01;
-	#endif
+	newray.origin = hitpos + newray.direction*FUDGE;
 	
 	///////////////////BASIC SHADOWS////////////////////////////////
-	//Iterates through each object to find lights, making shadow rays and testing them as it goes.
+	//Iterates through each object to find lights, making check_light_hit rays and testing them as it goes.
 	int lcnt=0;
 	int scnt=0;
 	vec4 stest;
 	ray sray;
-	shadow = true;
+	check_light_hit = true;
 	vec3 svect;
 	float svlen;
 
-/*	for(int i=0; i < num_objs ; i++){
+	#ifdef hard_shadows
+	
+	for(int i=0; i < num_objs ; i++){
 		if(obj_type(i) == T_LIGHT){
 			lcnt++;
 			svect = light_p(i) - hitpos;
 			svlen = sqrt(dot(svect,svect));
 
 			sray.direction = normalize(svect);
-			sray.origin = hitpos + sray.direction *0.001;
+			sray.origin = hitpos + sray.direction * FUDGE;
 
 			stest = test_objects_intersect(sray);
 
-			if(int(obj_type(int(stest.y))) != T_LIGHT){				 //If it intersects a light.
+			if(int(obj_type(int(stest.y))) == T_LIGHT){				 //If it intersects a light.
 				scnt++;
 			}
 			
 		}
 	}
-//	if(scnt != 0)
-//		c *= ((lcnt-scnt)/lcnt);		//Apply shadows.
-//		c *= 0.2;
+//	if(scnt = 0)
+//		c *= ((lcnt-scnt)/lcnt);		//Apply check_light_hits.
+	c *= (lcnt/scnt);
 
-	//Hard shadows
-	*/
+	return(c);
+	
+	#else
 	////////////////////Diffuse Lights/////////////////////
 
 
 	vec4 c_scaler = vec4(ambient,0);	//Set-up minimum of ambient.
 	vec4 p_scaler = vec4(0);
 	
-	shadow = true;
-	int cnt;
+	check_light_hit = true;
 	if(hitobj != T_NONE && (1-obj_reflec(hitobj)) >= BEPSILON){
 	for(int i=0; i < num_objs ; i++){
 	if(obj_type(i) == T_LIGHT){
-		cnt++;
 		svect = light_p(i) - hitpos;
 		svlen = sqrt(dot(svect,svect));
 		sray.direction = normalize(svect);
 
-		sray.origin = hitpos + sray.direction *0.001;
+		sray.origin = hitpos + sray.direction *FUDGE;
 		stest = test_objects_intersect(sray);
 
 		if((int(obj_type(int(stest.y))) == T_LIGHT)){
-//			vec3 surface_norm  = get_surface_norm(hitpos, int(res.y));	//Get _a_ normal
-
-//			colour = vec4(surface_norm,0);		//Display the norm
 			//DIFFUSE
 			c_scaler += vec4((obj_colour(i)*max(0,dot(sray.direction,surface_norm))),0);
-//			colour = colour * vec4((ambient + obj_colour(i)*max(0,dot(sray.direction,surface_norm))),0);
 			//PHONG
 			vec3 h = normalize((-cray.direction + sray.direction));
 			float a = max(0,(dot(h,surface_norm)));
 			p_scaler += vec4( pow(a,obj_phong(hitobj)) * obj_colour(i)  ,0  );
-//			p_scaler += vec4(clamp(pow(max(0,dot(h,surface_norm)),obj_phong(int(res.y))),0,1)) * vec4(obj_colour(i),0); 
-//			p_scaler += vec4(obj_pcolour(i)*  obj_pcolour(int(res.y)),0) * vec4(pow(max(0,(dot(surface_norm,h))),obj_phong(i)),0);
-//			colour += vec4(obj_colour(i)*obj_pcolour(int(res.y))*pow(max(0,dot(surface_norm,h)),obj_phong(i)),0);
 
 		}
 		}
 	}
 	}
-
+	
 	c = (c * vec4(c_scaler)) + vec4(p_scaler);
 	return(c);
+	#endif
 }
 
-uniform vec3 offset;
-uniform mat3 transform;
 
 void main(){
 	
-//	vec4 cam = vec4(0,0,0,PI/3);
-
   	ivec2 dims = imageSize (img_output);
 
   	vec4 pixel = vec4(0.0, 0.0, 0.0, 1.0);
@@ -440,69 +390,42 @@ void main(){
 	coords = coords + vec2(-1);
 
 
+	//BASIC	pos
+	newray.direction = vec3(coords, -1/tan(FOV/2));	
+	newray.origin = vec3(0,0,0);	
+
 	//TRANSFORMATIONS
-		
+	newray.origin = offset;
+	newray.direction = transform*newray.direction;
 
+	newray.direction = normalize(newray.direction);
 
-	/////////////////REFLECTIONS////////////////////////////////
-
-	#ifdef ssbo_ref	
-	//Sadly, this never worked, as I could not initalize data properly.
-//	colour = vec4(abs(ref_state.w/1));	
-//	if(ref_state.w == 0){	//NOT ALWAYS SET TO ZERO?
-		get_rray.data.x = 1;
-		get_rray.data.y = 0;	//Not used for anything.
-		get_rray.data.z = 0;
-
-		ray cray;
-		cray.origin = vec3(cam.xyz);
-		cray.direction = vec3(coords, -1/tan(cam.w/2));
-		cray.direction = normalize(cray.direction);
-
-		colour = rtrace(cray) * (1-get_rray.data.x); //IS GOOD.
-		ref_state.w = 1;
-//	}	
-//	else if(ref_state.w == 1){
-//		colour = imageLoad(img_output, pixel_coords); //Load a colour.
-//		ref_state.w++;
-//		vec4 cnew = rtrace(get_rray.r);
-//		colour = vec4(get_rray.r.origin,0);
-//		colour += cnew * (1-get_rray.data.x);  
-//	}
-//	else
-//		ref_state.w++;
-	#else 
-	//Because the ideal system of slowly adding more reflections is failing, a simpler system is needed.
+	/////////////////INIT////////////////////////////////
 	colour =vec4(0);
 	vec4 c2;
 	float ref_pwr=1;
 
-	newray.direction = vec3(coords, -1/tan(cam.w/2));
-	newray.origin = vec3(cam.xyz);
-	newray.direction = normalize(newray.direction);
 
-	//#define stack_reflect 10
+//#define stack_reflect 10
 
 #ifndef stack_reflect
-
+	//Iterative Reflection
 //	#define reflect_by_num 2
 
 	#ifdef reflect_by_num
-	for(int i=0; i < reflect_by_num ; i ++){
+	for(int i=0; i < reflect_by_num ; i ++){	//By fixed ammount
 	#else
-	while(ref_pwr >= 0.01){
+	while(ref_pwr >= BEPSILON){			//Dynamicly
 	#endif
-		c2 = rtrace(newray);			//Works:
+		c2 = rtrace(newray);			
 		colour += c2 * (ref_pwr) * (1-obj_reflec(hitobj));
 		ref_pwr*=obj_reflec(hitobj);
 		if(hitobj == T_NONE)
 			break;
 	}
-//	colour = vec4(hitobj==7);
-		
 		
 #else
-	//Stack based-recursion.
+	//Stack based-reflection. (Way slower)
 	vec4 Cstack[stack_reflect];
 
 	for(int i=0; i < stack_reflect ; i++){
@@ -514,16 +437,10 @@ void main(){
 	
 #endif
 
-#endif
 	//MOVES PARTICLES. NOTE: NO COLLISONS YET.
 	if(pixel_coords.y == 0 && pixel_coords.x <= num_objs && obj_type(pixel_coords.x) == T_PARTICLE){
 		obj_move(pixel_coords.x);
 	}
-
-	//Corrisponding test-hack for data passthrough
-//	colour = vec4(objs[pixel_coords.x],-objs[pixel_coords.y],0,0)/5;	
-//	colour = vec4(1,0,0,1);
-
 	if(ERROR ==0)
 		imageStore(img_output, pixel_coords, colour);
 	else
