@@ -37,7 +37,7 @@ uint 	gl_LocalInvocationID
 #define OBJ_SETV3(X,Y,Z)  OBJ_DATA(X,Y)=Z.x; OBJ_DATA(X,Y)=Z.y; OBJ_DATA(X,Y)=Z.z;
 
 #define obj_type(X) 		OBJ_DATA(X,0)
-#define obj_colour(X) 		OBJ_TOVEC3(X,1)
+//#define obj_colour(X) 		OBJ_TOVEC3(X,1)
 #define obj_pcolour(X) 		OBJ_TOVEC3(X,4)
 #define obj_velc(X)   		OBJ_TOVEC3(7)
 #define obj_phong(X)   		OBJ_DATA(X,10)
@@ -103,6 +103,20 @@ layout(std430, binding = 2) buffer reflection_buffer{
 int ERROR=0;
 #define E_OTHER 1
 #define E_TYPE 2
+
+#ifndef obj_colour
+vec3 obj_colour(int X){
+	vec3 v = OBJ_TOVEC3(X,1);
+	if(v.x == 0)
+		v.x = - obj_reflec(X);
+	if(v.y == 0)
+		v.y = - obj_reflec(X);
+	if(v.z == 0)
+		v.z = - obj_reflec(X);
+	return v;
+	
+}
+#endif
 void set_error(int type){
 	if(ERROR ==0)
 		ERROR=type;
@@ -131,7 +145,7 @@ float ray_intersect_sphere(ray r, uint obj_ID){
 	t1 = (-b + sqrt(det))/2*a;
 	t2 = (-b - sqrt(det))/2*a;
 
-	if(t1 < t2 && t1 >= 0){
+	if(t1 < t2 && t1 > 0){
 		return(t1);
 	}else
 		return(t2);
@@ -188,7 +202,7 @@ float ray_intersect_plane(ray r, uint obj){
 
 }
 
-#define BEPSILON 0.01
+#define BEPSILON 0.001
 float ray_intersect_point(ray r, uint obj){
 	vec3 t= (-r.origin + light_p(obj));
 	t.x /= r.direction.x;
@@ -284,11 +298,12 @@ int hitobj;
 
 vec4 rtrace(ray cray){
 
+	vec4 c;
 	//////////////////BASIC RAY-TRACING///////////////////
 	shadow=false;
 	vec4 res = test_objects_intersect(cray);
 	if(res.x >= 0)
-		colour = vec4(obj_colour(int(res.y)),0);
+		c = vec4(obj_colour(int(res.y)),0);
 
 	vec3 hitpos = res.x * cray.direction + cray.origin;
 
@@ -302,7 +317,7 @@ vec4 rtrace(ray cray){
 	#else
 	hitobj = int(res.y);
 	newray.direction = normalize(reflect(cray.direction, surface_norm));
-	newray.origin = hitpos;// + newray.direction*0.0004;
+	newray.origin = hitpos + newray.direction*0.04;
 	#endif
 	
 	///////////////////BASIC SHADOWS////////////////////////////////
@@ -321,7 +336,7 @@ vec4 rtrace(ray cray){
 			svlen = sqrt(dot(svect,svect));
 
 			sray.direction = normalize(svect);
-			sray.origin = hitpos + sray.direction *0.01;
+			sray.origin = hitpos + sray.direction *0.001;
 
 			stest = test_objects_intersect(sray);
 
@@ -332,8 +347,8 @@ vec4 rtrace(ray cray){
 		}
 	}
 //	if(scnt != 0)
-//		colour *= ((lcnt-scnt)/lcnt);		//Apply shadows.
-//		colour *= 0.2;
+//		c *= ((lcnt-scnt)/lcnt);		//Apply shadows.
+//		c *= 0.2;
 	////////////////////Diffuse Lights/////////////////////
 
 
@@ -350,7 +365,7 @@ vec4 rtrace(ray cray){
 		svlen = sqrt(dot(svect,svect));
 		sray.direction = normalize(svect);
 
-		sray.origin = hitpos + sray.direction *0.01;
+		sray.origin = hitpos + sray.direction *0.001;
 		stest = test_objects_intersect(sray);
 
 		if((int(obj_type(int(stest.y))) == T_LIGHT)){
@@ -358,7 +373,7 @@ vec4 rtrace(ray cray){
 
 //			colour = vec4(surface_norm,0);		//Display the norm
 			//DIFFUSE
-			c_scaler += vec4((+ obj_colour(i)*max(0,dot(sray.direction,surface_norm))),0);
+			c_scaler += vec4((obj_colour(i)*max(0,dot(sray.direction,surface_norm))),0);
 //			colour = colour * vec4((ambient + obj_colour(i)*max(0,dot(sray.direction,surface_norm))),0);
 			//PHONG
 			vec3 h = (-cray.direction + sray.direction);
@@ -371,9 +386,8 @@ vec4 rtrace(ray cray){
 	}
 //	}
 
-	colour = (colour * vec4(c_scaler)) + vec4(p_scaler);
-	
-	return(colour);
+	c = (c * vec4(c_scaler)) + vec4(p_scaler);	
+	return(c);
 }
 void main(){
 	
@@ -443,11 +457,11 @@ void main(){
 //	newray.direction = //TRANSPOSE THE LOOK-DIR
 	newray.direction = normalize(newray.direction);
 
-//  #define stack_reflect 10
+//#define stack_reflect 10
 
 #ifndef stack_reflect
 
-//#define reflect_by_num 10
+#define reflect_by_num 1
 	#ifdef reflect_by_num
 	for(int i=0; i < reflect_by_num ; i ++){
 	#else
@@ -457,7 +471,7 @@ void main(){
 //		ref_pwr*=obj_reflec(hitobj);				//Attempt at recursion-less.
 //		colour = (colour - c2*ref_pwr)/(1-ref_pwr);
 		
-		c2 = rtrace(newray);			//Works
+		c2 = rtrace(newray);			//Works:
 		ref_pwr*=obj_reflec(hitobj);
 		colour += c2 * (1-ref_pwr);
 

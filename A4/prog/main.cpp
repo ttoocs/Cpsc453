@@ -268,7 +268,7 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
 }
 
 	#ifdef PPM_OUT
-char *pixels;
+unsigned char *pixels;
 int out_num=0;
 void to_ppm(){
 	if(pixels != NULL)
@@ -276,19 +276,19 @@ void to_ppm(){
 
 	FILE * out =fopen("out.ppm","wt");
 //	#ifdef PPM_OUT 0
-	pixels = (char *) malloc(WIDTH*HEIGHT*sizeof(char)*4);
+	pixels = (unsigned char *) malloc(WIDTH*HEIGHT*sizeof(unsigned char)*4);
 	
 	glActiveTexture(GL_TEXTURE0);
-	glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_BYTE, pixels);
+	glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
 
 //	glGetTextureImage(glstuff.tex_output,0,GL_RGBA,GL_UNSIGNED_BYTE,WIDTH*HEIGHT*4,&pixels);
 	glMemoryBarrier(GL_ALL_BARRIER_BITS);
 	fprintf(out,"P3\n");
-	fprintf(out,"%d %d\n %d \n",WIDTH,HEIGHT,127);
+	fprintf(out,"%d %d\n %d \n",WIDTH,HEIGHT,256);
 	int k=0;
 	for(int i =0; i < HEIGHT ; i++){
 		for(int j = 0; j < WIDTH ; j++){
-			fprintf(out," %d %d %d ", pixels[k], pixels[k+1], pixels[k+2]);
+			fprintf(out," %u %u %u ", pixels[k], pixels[k+1], pixels[k+2]);
 			k+=4; //4 due to alpha.
 		}
 		fprintf(out,"\n");
@@ -328,7 +328,7 @@ void Render(){
 //	if(out_num++ == 10)
 	#ifdef PPM_OUT
 		to_ppm();	 
-	#endif	
+	#else
 
 //	glClearColor(0.2, 0.2, 0.2, 1.0);
 //	glClear(GL_COLOR_BUFFER_BIT);
@@ -338,6 +338,8 @@ void Render(){
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, glstuff.tex_output);
 	glDrawArrays(GL_TRIANGLE_STRIP,0,4);
+
+	#endif
 //	}
 
 	return;
