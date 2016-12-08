@@ -23,7 +23,12 @@
 
 #define PI 3.1415926535897939
 
+#include	"glm/glm.hpp"
+#include	"glm/gtc/matrix_transform.hpp"
+
 #include "gl_helpers.cpp"
+#include "camera.cpp"
+				//Include Jeremy's camera.
 
 #define WIDTH 512*1
 #define HEIGHT 512*1
@@ -33,6 +38,7 @@
 
 
 using namespace std;
+
 
 /*
 GLfloat step = 0.1;
@@ -77,29 +83,20 @@ void reset_trans(){
 	FOV = PI/6;
 }
 
-
-GLfloat vertices[]={
-	-1,	1,
-	-1,	-1,
-	1,	1,
-	1,	-1,
-};
-
 */
+
+std::vector<glm::vec3> vertices;
 
 struct GLSTUFF{
 	GLuint vertexbuffer;
 	GLuint vertexarray;
 	GLuint prog;
-	GLuint cprog;
 	GLuint vertexShader;
 	GLuint fragShader;
-	GLuint compShader;
-	GLuint tex_output;
-	GLuint ssbo;
-	GLuint refbo;
 };
 GLSTUFF glstuff;
+
+
 
 /*
 void set_uniforms(){
@@ -115,45 +112,20 @@ void set_uniforms(){
 	glUniform3fv(uniOff,1,offset);
 	glUniformMatrix3fv(uniTrans,1,0,*trans);
 }
-
-#define MAX_SCENE 3
-void changeScene(){
-	vector<GLfloat> objects;	
-	if(scene > MAX_SCENE)
-		scene = 0;
-	if(scene < 0  )
-		scene = MAX_SCENE;
-	printf("Scene: %d\n",scene+1);
-	if(scene == 0){
-		objects = parse("scene1.txt");
-	}else if(scene == 1){
-		objects = parse("scene2.txt");
-	}else if(scene == 2){
-		objects = parse("scene3.txt");
-	}else if(scene == 3){
-		objects = parse("scene4.txt");
-	}
-
-	if(!initalized){
-		initalized=true;
+*/
+void initalize_GL(){	
 		glstuff.prog = glCreateProgram();
 		glstuff.vertexShader = CompileShader(GL_VERTEX_SHADER,LoadSource("vertex.glsl"));
 		glstuff.fragShader = CompileShader(GL_FRAGMENT_SHADER,LoadSource("fragment.glsl"));
-
-		glstuff.cprog = glCreateProgram();
-		glstuff.compShader = CompileShader(GL_COMPUTE_SHADER,LoadSource("compute.glsl"));
 			
 		glAttachShader(glstuff.prog, glstuff.vertexShader);
 		glAttachShader(glstuff.prog, glstuff.fragShader);
-		glAttachShader(glstuff.cprog, glstuff.compShader);
 
 		//Attrib things here
 
-//		cout << "Nuggets" << endl;	//I have no idea why I need to print something out here.
-		glLinkProgram(glstuff.prog);
+		glLinkProgram(glstuff.prog);	//Link to full program.
 		check_gllink(glstuff.prog);
-		glLinkProgram(glstuff.cprog);
-		check_gllink(glstuff.cprog);
+
 		//Vertex stuffs
 
 		glUseProgram(glstuff.prog);
@@ -183,6 +155,7 @@ void changeScene(){
 
 		//Texture stuff
 		
+	/*
 		float color[] = { 1.0f, 0.0f, 0.0f, 1.0f };
 		glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, color);
 
@@ -204,70 +177,13 @@ void changeScene(){
 		//Buffer stuff
 		glGenBuffers(1,&glstuff.ssbo);
 		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, glstuff.ssbo);
-		
-	}
-
-		//Update stuff
-
-	reset_trans();
-	set_uniforms();	
-	//cout << objects.data()[0] << endl;
-	//TEST-HACK FOR DATA_PASSTHROUGH
-	//objects.clear();
-	//for(int i =0; i<256 ; i++){
-	//	objects.push_back(1.0);
-	//}
+		*/
 	
 
-	//Generate extra-space for paricles ;D
-	
-	if(particles!=0){
-	int z = floor(sqrt(particles));
-	for(int i=0; i<=z ; i++){
-		for(int j=0; j<=z ; j++){
-			int pcnt=1;
-			objects.push_back(T_PARTICLE);
-			float x;
-			float y;
-			x = ((float)i)*2/z;
-			y = ((float)j)*2/z;
-//			float x = ((float)i)*2/z;
-//			float y = ((float)j)*2/z;
-			x -= 1;
-			y -= 1;
-			V_PUSH(objects,0,0.5,0.5);	//Cyan color
-			pcnt+=3;
-			V_PUSH(objects,0,0.5,0.5);	//Cyan color
-			pcnt+=3;
-			V_PUSH(objects,0,0,-0.01f);	//Velocity
-			pcnt+=3;
-			objects.push_back(1);	//Phong
-			pcnt++;
-			objects.push_back(1);		//Reflective
-			pcnt++;
-			V_PUSH(objects,x,y,-0.5);		//Position
-			pcnt+=3;
-			objects.push_back(0.04);	//Radius
-			pcnt++;
-			while(pcnt < OBJSIZE){
-				pcnt++;
-				objects.push_back(0);
-			}
-//			cout << x << ":" << y << endl;
-		}
-	}
-	objects.data()[0] = (objects.size()/OBJSIZE);
-	} 
-
-	// Update objects.
-	glBindBuffer(GL_SHADER_STORAGE_BUFFER, glstuff.ssbo);
-	glBufferData(GL_SHADER_STORAGE_BUFFER, objects.size()*sizeof(GLfloat), objects.data(), GL_DYNAMIC_COPY);
-	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0); // unbind
-	cout << objects.data()[0] << endl;
 
 }
 
-*/
+// */
 // handles keyboard input events
 void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
@@ -329,10 +245,13 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
 	*/
 }	
 void Render(){
+	glClearColor(0,0,0,0);
+	glClear(GL_COLOR_BUFFER_BIT);
+	glClear(GL_DEPTH_BUFFER_BIT);
 	glUseProgram(glstuff.prog);
 	glBindVertexArray(glstuff.vertexarray);
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, glstuff.tex_output);
+//	glActiveTexture(GL_TEXTURE0);
+//	glBindTexture(GL_TEXTURE_2D, glstuff.tex_output);
 	glDrawArrays(GL_TRIANGLE_STRIP,0,4);
 	return;
 }
@@ -347,7 +266,7 @@ int main(int argc, char * argv[]){
 
 	glfwSetKeyCallback(window, KeyCallback);
 
-
+	initalize_GL();
 	while(!glfwWindowShouldClose(window))
 	{ //Main loop.
 		Render();
