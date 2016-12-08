@@ -24,26 +24,17 @@
 #define PI 3.1415926535897939
 
 #include "gl_helpers.cpp"
-#include "parser.cpp"
 
 #define WIDTH 512*1
 #define HEIGHT 512*1
 
 #define V_PUSH(X,a,b,c) X.push_back(a); X.push_back(b); X.push_back(c);
 
-#define PPM_OUT 1
-#define RUN_TEST 1
-///#define ssbo_ref
 
 
 using namespace std;
-int scene=0;
-bool initalized=false;
-int particles=1024*1024*10;
 
-bool update = true;
-bool Exit = false;
-
+/*
 GLfloat step = 0.1;
 GLfloat trans[3][3] = {{1,0,0},{0,1,0},{0,0,1}};
 GLfloat offset[3] = {0,0,0};
@@ -94,6 +85,8 @@ GLfloat vertices[]={
 	1,	-1,
 };
 
+*/
+
 struct GLSTUFF{
 	GLuint vertexbuffer;
 	GLuint vertexarray;
@@ -108,7 +101,7 @@ struct GLSTUFF{
 };
 GLSTUFF glstuff;
 
-
+/*
 void set_uniforms(){
 	glUseProgram(glstuff.cprog);
 //	cout << "updating uniforms" << endl;
@@ -274,13 +267,13 @@ void changeScene(){
 
 }
 
-
+*/
 // handles keyboard input events
 void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
         glfwSetWindowShouldClose(window, GL_TRUE);
-    if (key == GLFW_KEY_1 && action == GLFW_PRESS){
+/*    if (key == GLFW_KEY_1 && action == GLFW_PRESS){
 	scene++;
     	changeScene();
     }
@@ -333,93 +326,20 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
     }
     add_offset(addoffset);
     set_uniforms();
-
-}
-
-//	#ifdef PPM_OUT
-unsigned char *pixels;
-int out_num=0;
-void to_ppm(){
-	if(pixels != NULL)
-		free(pixels);
-
-	FILE * out =fopen("out.ppm","wt");
-//	#ifdef PPM_OUT 0
-	pixels = (unsigned char *) malloc(WIDTH*HEIGHT*sizeof(unsigned char)*4);
-	
-	glActiveTexture(GL_TEXTURE0);
-	glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
-
-//	glGetTextureImage(glstuff.tex_output,0,GL_RGBA,GL_UNSIGNED_BYTE,WIDTH*HEIGHT*4,&pixels);
-	glMemoryBarrier(GL_ALL_BARRIER_BITS);
-	fprintf(out,"P3\n");
-	fprintf(out,"%d %d\n %d \n",WIDTH,HEIGHT,256);
-	int k=0;
-	for(int i =0; i < HEIGHT ; i++){
-		for(int j = 0; j < WIDTH ; j++){
-			fprintf(out," %u %u %u ", pixels[k], pixels[k+1], pixels[k+2]);
-			k+=4; //4 due to alpha.
-		}
-		fprintf(out,"\n");
-	}
-//	#endif
-/*	#ifdef PPM_OUT 1
-	pixels = (char *) malloc(WIDTH*sizeof(char)*4);
-	fprintf(out,"P6\n");
-	fprintf(out,"%d %d\n %d \n",WIDTH,HEIGHT,127);
-
-	for(int i = 0; i < HEIGHT; i++){	
-		int x = HEIGHT-i-1;		//Get pixel texture upside down
-		glActiveTexture(GL_TEXTURE0);
-		glTexSubImage2D(GL_TEXTURE_2D, 0, x, 0, WIDTH-1, 1, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
-		glMemoryBarrier(GL_ALL_BARRIER_BITS);
-//		fwrite(pixels,WIDTH*4,1,out);	//Won't work, due to ALPHA.
-		for(int j=0; j < WIDTH; j++){
-			fprintf(out,"%c%c%c",pixels[j++],pixels[j++],pixels[j++]);	
-			//j++;	//Alpha
-		}
-		//fprintf(out,"\n")
-	}
-
-	#endif 
 	*/
-	fclose(out);
-	Exit=true;
-}
-//#endif
+}	
 void Render(){
-//	if(update){
-//	update=false;
-	glUseProgram(glstuff.cprog);
-	glDispatchCompute((GLuint)WIDTH, (GLuint)HEIGHT, 1);
-
-	glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
-//	if(out_num++ == 10)
-//
-//	#ifndef RUN_TEST
-	#ifdef PPM_OUT
-		to_ppm();	 
-	#else
-
-//	glClearColor(0.2, 0.2, 0.2, 1.0);
-//	glClear(GL_COLOR_BUFFER_BIT);
-
 	glUseProgram(glstuff.prog);
 	glBindVertexArray(glstuff.vertexarray);
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, glstuff.tex_output);
 	glDrawArrays(GL_TRIANGLE_STRIP,0,4);
-	#endif
-//	#endif
-
-//	}
-
 	return;
 }
 int main(int argc, char * argv[]){
 
 
-	GLFWwindow * window = glfw_init(WIDTH,HEIGHT,"Scott Saunders - Assignment 4");	//Init window.
+	GLFWwindow * window = glfw_init(WIDTH,HEIGHT,"Scott Saunders - Assignment 5");	//Init window.
 
 	glDebugMessageCallback(	GL_error_callback, NULL);
 	glEnable(GL_DEBUG_OUTPUT);								//DEBUG :D
@@ -427,34 +347,13 @@ int main(int argc, char * argv[]){
 
 	glfwSetKeyCallback(window, KeyCallback);
 
-	changeScene();	//Load up a scene!
-	set_uniforms();
 
-	#ifdef RUN_TEST 
-	cout << "Running a test with " << RUN_TEST << " frames." << endl;
-	double initTime = glfwGetTime();
-	for (int i=0; i<RUN_TEST; i++)
-	#else
 	while(!glfwWindowShouldClose(window))
-	#endif
 	{ //Main loop.
 		Render();
-		if(Exit){break;}	//Exit if need be.
-    		glfwSwapBuffers(window);
-		#ifndef RUN_TEST
-		//usleep(100);
+    glfwSwapBuffers(window);
 		glfwPollEvents();
-		//glfwWaitEvents();
 
-		#endif
 	}
-	#ifdef RUN_TEST
-	double endTime = glfwGetTime();
-	cout << "Test run for " << RUN_TEST << " frames is " << endTime-initTime << endl;
-//	#ifdef PPM_OUT
-		to_ppm();	 
-//	#endif
-	#endif
-
 	glfwTerminate();	//Kill the glfw interface
 }
