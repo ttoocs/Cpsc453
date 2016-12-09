@@ -33,8 +33,9 @@
 #define WIDTH 512*1
 #define HEIGHT 512*1
 
-#define V_PUSH(X,a,b,c) X.push_back(a); X.push_back(b); X.push_back(c);
 
+// #define V_PUSH(X,a,b,c) X.push_back(a); X.push_back(b); X.push_back(c);
+#define V_PUSH(X,a,b,c) X.push_back(vec3(a,b,c));	//Re-wrttien for GLM.
 
 
 using namespace std;
@@ -146,12 +147,16 @@ void initalize_GL(){
 		glBindVertexArray(0);
 	
 		//Push square
+
+		V_PUSH(vertices,1,0,0);
+		V_PUSH(vertices,0,1,0);
+		V_PUSH(vertices,1,1,0);
 		
 		glBindVertexArray(glstuff.vertexarray);
 		glBindBuffer(GL_ARRAY_BUFFER, glstuff.vertexbuffer);
-		glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-    		glBindBuffer(GL_ARRAY_BUFFER, 0);
-	    	glBindVertexArray(0);
+		glBufferData(GL_ARRAY_BUFFER, vertices.size()*sizeof(glm::vec3), vertices.data(), GL_STATIC_DRAW);
+ 		glBindBuffer(GL_ARRAY_BUFFER, 0);
+   	glBindVertexArray(0);
 
 		//Texture stuff
 		

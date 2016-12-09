@@ -1,0 +1,19 @@
+\begin{itemize}
+
+\item A: \\
+
+$y=r\cos(\theta)$\\
+$x=r\cos(\theta)\cos(\rho)$ \\
+$z=r\cos(\theta)\sin(\rho)$ \\
+
+Plugging in $60,135,4$ gives you: \\
+$\left(\sqrt{3} \sqrt{2},\,2,\,-\sqrt{3} \sqrt{2}\right)$ \\
+
+\item B: \\
+
+There's infinite solutions here, as we can freely "roll" the camera. \\
+The $c_z = cameraPos-centre$, which in this case is just the position, as the $centre$ may as well be zero. Normalizing that we get: $\left(\frac{1}{4} \, \sqrt{3} \sqrt{2},\,\frac{1}{2},\,-\frac{1}{4} \, \sqrt{3} \sqrt{2}\right)$ \\
+
+That leaves $c_x$ or $c_y$ to be the cross product of $c_y c_z$ or $c_x c_y$, while the other being any point we want on the tangent plane. Using the dot-product and look at $\sqrt{3} \sqrt{2},\,2,\,-\sqrt{3} \sqrt{2}$ we can see $(1,0,1)$ is orthogonal. Normalized is $\left(\frac{1}{2} \, \sqrt{2},\,0,\,\frac{1}{2} \, \sqrt{2}\right)$. Giving the last coordinate (via cross-product) $\left(\frac{1}{4} \, \sqrt{2},\,-\frac{1}{2} \, \sqrt{3},\,-\frac{1}{4} \, \sqrt{2}\right)$
+
+\end{itemize}
