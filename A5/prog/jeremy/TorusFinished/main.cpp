@@ -346,6 +346,10 @@ void generateTorus(vector<vec3>& positions, vector<vec3>& normals,
 //			vec3 pos = vec3(	(c_r+t_r*cos(2.f*PI*v)) * cos(2.f*PI*u),
 //								t_r*sin(2.f*PI*v),
 //								(c_r+t_r*cos(2.f*PI*v)) * sin(2.f*PI*u));
+			      vec3 pos = vec3(c_r*cos(2.f*PI*u)*sin(2.f*PI*v),
+                      c_r*sin(2.f*PI*u)*cos(2.f*PI*v),
+                      c_r*cos(2.f*PI*v));
+
 
 
 			vec3 normal = normalize(pos - center);

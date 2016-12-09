@@ -142,7 +142,8 @@ void generateSphere(Sphere *s)
 //								t_r*sin(2.f*PI*v),
 //								(s->radius+t_r*cos(2.f*PI*v)) * sin(2.f*PI*u));
 
-			vec3 pos = vec3(s->radius*cos(2.f*PI*v)*sin(2.f*PI*u),
+
+			vec3 pos = vec3(s->radius*cos(2.f*PI*v)*sin(2.f*PI*u),	//NOT AT ALL A SPHERE.
 											s->radius*sin(2.f*PI*v)*cos(2.f*PI*u),
 											s->radius*cos(2.f*PI*u));
 		
