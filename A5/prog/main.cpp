@@ -33,6 +33,13 @@
 #define WIDTH 512*1
 #define HEIGHT 512*1
 
+#define DEBUG
+
+#ifdef DEBUG
+	#define DEBUGMSG	printf("\n\n\t\t DEBUG MESSAGE AT LINE:\t%d\t In file:\t%s\n\n",__LINE__,__FILE__);
+#else 
+	#define DEBUGMSG	;
+#endif
 
 // #define V_PUSH(X,a,b,c) X.push_back(a); X.push_back(b); X.push_back(c);
 #define V_PUSH(X,a,b,c) X.push_back(vec3(a,b,c));	//Re-wrttien for GLM.
@@ -89,56 +96,61 @@ void reset_trans(){
 std::vector<glm::vec3> vertices;
 
 struct GLSTUFF{
-	GLuint vertexbuffer;
-	GLuint vertexarray;
 	GLuint prog;
 	GLuint vertexShader;
 	GLuint fragShader;
+	GLuint vertexarray;
+	GLuint vertexbuffer;
+	GLuint normalbuffer;
+	GLuint uvsbuffer;
+	GLuint indiciesbuffer;
 };
 GLSTUFF glstuff;
 
 typedef struct Sphere Sphere;
 struct Sphere{
 	std::vector<glm::vec3> positions;
-	std::vector<glm::vec3> normals;			//What are these used for?
-	std::vector<glm::vec2> uvs;
+	std::vector<glm::vec3> normals;			//What are these used for? -- Lighting.
+	std::vector<glm::vec2> uvs;			//My guess this is for textures?
 	std::vector<unsigned int> indices;
 	float radius;
 	int divisions;
+
 };
 
 //Generates a sphere based on it's radious and divisions.
-void generateCircle(Sphere s)
+void generateSphere(Sphere *s)
 {
-	float uStep = 1.f/(float)(s.divisions-1);
+	float uStep = 1.f/(float)(s->divisions-1);
 	#define vStep uStep
 
 	float u = 0.f;
 
 	//Traversing u
-	for(int i=0; i<s.divisions; i++)
+	for(int i=0; i<s->divisions; i++)
 	{
 
-		vec3 center = vec3(	s.radius*cos(2.f*PI*u), 0.f,	s.radius*sin(2.f*PI*u));
+//		vec3 center = vec3(	s->radius*cos(2.f*PI*u), 0.f,	s->radius*sin(2.f*PI*u));
+		vec3 center= vec3(0);
 
 		float v = 0.f;
 
 		//Traversing v
-		for(int j=0; j<s.divisions; j++)
+		for(int j=0; j<s->divisions; j++)
 		{
-//			vec3 pos = vec3(	(s.radius+t_r*cos(2.f*PI*v)) * cos(2.f*PI*u),
+//			vec3 pos = vec3(	(s->radius+t_r*cos(2.f*PI*v)) * cos(2.f*PI*u),
 //								t_r*sin(2.f*PI*v),
-//								(s.radius+t_r*cos(2.f*PI*v)) * sin(2.f*PI*u));
+//								(s->radius+t_r*cos(2.f*PI*v)) * sin(2.f*PI*u));
 
-			vec3 pos = vec3(s.radius*cos(2.f*PI*v)*sin(2.f*PI*u),
-											s.radius*sin(2.f*PI*v)*cos(2.f*PI*u),
-											s.radius*cos(2.f*PI*u));
+			vec3 pos = vec3(s->radius*cos(2.f*PI*v)*sin(2.f*PI*u),
+											s->radius*sin(2.f*PI*v)*cos(2.f*PI*u),
+											s->radius*cos(2.f*PI*u));
 		
-			vec3 normal = normalize(pos - center);	//No idea what this is or does.
+			vec3 normal = normalize(pos - center);	
 			
-			s.positions.push_back(pos);
-			s.normals.push_back(normal);
-			s.uvs.push_back(vec2(u, v));
+			s->positions.push_back(pos);
+			s->normals.push_back(normal);
+			s->uvs.push_back(vec2(u, v));
 
 			v += vStep;
 		}
@@ -146,18 +158,23 @@ void generateCircle(Sphere s)
 		u += uStep;
 	}
 
-	for(int i=0; i<s.divisions-1; i++)
+	for(int i=0; i<s->divisions-1; i++)
 	{
-		for(int j=0; j<s.divisions -1; j++)
+		for(int j=0; j<s->divisions -1; j++)
 		{
-			unsigned int p00 = i*s.divisions+j;
-			unsigned int p01 = i*s.divisions+j+1;
-			unsigned int p10 = (i+1)*s.divisions + j;
-			unsigned int p11 = (i+1)*s.divisions + j + 1;
+			unsigned int p00 = i*s->divisions+j;
+			unsigned int p01 = i*s->divisions+j+1;
+			unsigned int p10 = (i+1)*s->divisions + j;
+			unsigned int p11 = (i+1)*s->divisions + j + 1;
 
-			s.indices.push_back(p00);
-			s.indices.push_back(p10);
-			s.indices.push_back(p01);
+			s->indices.push_back(p00);
+			s->indices.push_back(p10);
+			s->indices.push_back(p01);
+
+      s->indices.push_back(p01);
+      s->indices.push_back(p10);
+      s->indices.push_back(p11);
+
 		}
 	}
 	#undef vStep
@@ -200,24 +217,39 @@ void initalize_GL(){
 		//Vertex stuffs
 
 		glUseProgram(glstuff.prog);
-		glGenBuffers(1, &glstuff.vertexbuffer);
 		glGenVertexArrays(1, &glstuff.vertexarray);
-		
+		glGenBuffers(1, &glstuff.vertexbuffer);
+		glGenBuffers(1, &glstuff.normalbuffer);
+		glGenBuffers(1, &glstuff.uvsbuffer);
+		glGenBuffers(1, &glstuff.indiciesbuffer);
+	
 		glBindVertexArray(glstuff.vertexarray);
 		glBindBuffer(GL_ARRAY_BUFFER,glstuff.vertexbuffer);
-		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, 0);
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(vec3), 0);	//Points
+		glEnableVertexAttribArray(0);
+
+		glBindVertexArray(glstuff.vertexarray);
+		glBindBuffer(GL_ARRAY_BUFFER,glstuff.normalbuffer);
+		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(vec3), 0); //Normals
 		glEnableVertexAttribArray(1);
 
 		glBindVertexArray(glstuff.vertexarray);
-		glBindBuffer(GL_ARRAY_BUFFER,glstuff.vertexbuffer);
-		glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, 0);
-		glEnableVertexAttribArray(0);
+		glBindBuffer(GL_ARRAY_BUFFER,glstuff.uvsbuffer);
+		glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(vec2), 0); //UVS
+		glEnableVertexAttribArray(2);
+		
+		glBindVertexArray(glstuff.vertexarray);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,glstuff.indiciesbuffer);	//Indicies no need fancy?
+
+//		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(vec3), 0); //INDICIES
+//		glEnableVertexAttribArray(1);
 
 		glBindBuffer(GL_ARRAY_BUFFER, 0);
 		glBindVertexArray(0);
 	
 		//Push square
 
+		//Initalize with a beauitful triangle.
 		V_PUSH(vertices,1,0,0);
 		V_PUSH(vertices,0,1,0);
 		V_PUSH(vertices,1,1,0);
@@ -320,10 +352,36 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
 	*/
 }
 
-void Render_Sphere(Sphere s){
+void Render_Sphere(Sphere *s){	//Renders an individual sphere.
+	glClearColor(0,0,0,0);
+	glClear(GL_COLOR_BUFFER_BIT);
+	glClear(GL_DEPTH_BUFFER_BIT);
 	glUseProgram(glstuff.prog);
 	glBindVertexArray(glstuff.vertexarray);
-	
+	glUseProgram(glstuff.prog);
+
+	//Copy data:
+		glBindBuffer(GL_ARRAY_BUFFER,glstuff.vertexbuffer);	//Setup data-copy (points)
+		glBufferData(GL_ARRAY_BUFFER,sizeof(vec3)*s->positions.size(),s->positions.data(),GL_DYNAMIC_DRAW);
+
+		glBindBuffer(GL_ARRAY_BUFFER,glstuff.normalbuffer);	//Setup data-copy (norms)
+		glBufferData(GL_ARRAY_BUFFER,sizeof(vec3)*s->normals.size(),s->normals.data(),GL_DYNAMIC_DRAW);
+
+		glBindBuffer(GL_ARRAY_BUFFER,glstuff.uvsbuffer);	//Setup data-copy (uvs)
+		glBufferData(GL_ARRAY_BUFFER,sizeof(vec2)*s->uvs.size(),s->uvs.data(),GL_DYNAMIC_DRAW);
+
+		glBindBuffer(GL_ARRAY_BUFFER,glstuff.indiciesbuffer);	//Setup data-copy	(indicies)
+		glBufferData(GL_ARRAY_BUFFER,sizeof(unsigned int)*s->indices.size(),s->indices.data(),GL_DYNAMIC_DRAW);
+
+	//Actually draw.
+
+	glDrawElements(
+		GL_TRIANGLES,   //What shape we're drawing  - GL_TRIANGLES, GL_LINES, GL_POINTS, GL_QUADS, GL_TRIANGLE_STRIP
+		s->indices.size(),    //How many indices
+		GL_UNSIGNED_INT,  //Type
+		0
+	);
+
 }
 	
 void Render(){
@@ -341,6 +399,13 @@ void Render(){
 }
 int main(int argc, char * argv[]){
 
+	Sphere testsphere;
+	testsphere.radius = 1;
+	testsphere.divisions = 5;
+
+	generateSphere(&testsphere);
+
+	printf("sizeof %d \n\n",testsphere.positions.size());
 
 	GLFWwindow * window = glfw_init(WIDTH,HEIGHT,"Scott Saunders - Assignment 5");	//Init window.
 
@@ -351,9 +416,11 @@ int main(int argc, char * argv[]){
 	glfwSetKeyCallback(window, KeyCallback);
 
 	initalize_GL();
+
+
 	while(!glfwWindowShouldClose(window))
 	{ //Main loop.
-		Render();
+		Render_Sphere(&testsphere);
     glfwSwapBuffers(window);
 		glfwPollEvents();
 
