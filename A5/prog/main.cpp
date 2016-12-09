@@ -97,7 +97,71 @@ struct GLSTUFF{
 };
 GLSTUFF glstuff;
 
+typedef struct Sphere Sphere;
+struct Sphere{
+	std::vector<glm::vec3> positions;
+	std::vector<glm::vec3> normals;			//What are these used for?
+	std::vector<glm::vec2> uvs;
+	std::vector<unsigned int> indices;
+	float radius;
+	int divisions;
+};
 
+//Generates a sphere based on it's radious and divisions.
+void generateCircle(Sphere s)
+{
+	float uStep = 1.f/(float)(s.divisions-1);
+	#define vStep uStep
+
+	float u = 0.f;
+
+	//Traversing u
+	for(int i=0; i<s.divisions; i++)
+	{
+
+		vec3 center = vec3(	s.radius*cos(2.f*PI*u), 0.f,	s.radius*sin(2.f*PI*u));
+
+		float v = 0.f;
+
+		//Traversing v
+		for(int j=0; j<s.divisions; j++)
+		{
+//			vec3 pos = vec3(	(s.radius+t_r*cos(2.f*PI*v)) * cos(2.f*PI*u),
+//								t_r*sin(2.f*PI*v),
+//								(s.radius+t_r*cos(2.f*PI*v)) * sin(2.f*PI*u));
+
+			vec3 pos = vec3(s.radius*cos(2.f*PI*v)*sin(2.f*PI*u),
+											s.radius*sin(2.f*PI*v)*cos(2.f*PI*u),
+											s.radius*cos(2.f*PI*u));
+		
+			vec3 normal = normalize(pos - center);	//No idea what this is or does.
+			
+			s.positions.push_back(pos);
+			s.normals.push_back(normal);
+			s.uvs.push_back(vec2(u, v));
+
+			v += vStep;
+		}
+
+		u += uStep;
+	}
+
+	for(int i=0; i<s.divisions-1; i++)
+	{
+		for(int j=0; j<s.divisions -1; j++)
+		{
+			unsigned int p00 = i*s.divisions+j;
+			unsigned int p01 = i*s.divisions+j+1;
+			unsigned int p10 = (i+1)*s.divisions + j;
+			unsigned int p11 = (i+1)*s.divisions + j + 1;
+
+			s.indices.push_back(p00);
+			s.indices.push_back(p10);
+			s.indices.push_back(p01);
+		}
+	}
+	#undef vStep
+}
 
 /*
 void set_uniforms(){
@@ -114,7 +178,13 @@ void set_uniforms(){
 	glUniformMatrix3fv(uniTrans,1,0,*trans);
 }
 */
-void initalize_GL(){	
+void initalize_GL(){
+	
+		glEnable(GL_DEPTH_TEST); 		//Turn on depth testing
+		glDepthFunc(GL_LEQUAL); 			//Configure depth testing
+
+	
+		//OpenGL programs
 		glstuff.prog = glCreateProgram();
 		glstuff.vertexShader = CompileShader(GL_VERTEX_SHADER,LoadSource("vertex.glsl"));
 		glstuff.fragShader = CompileShader(GL_FRAGMENT_SHADER,LoadSource("fragment.glsl"));
@@ -122,7 +192,7 @@ void initalize_GL(){
 		glAttachShader(glstuff.prog, glstuff.vertexShader);
 		glAttachShader(glstuff.prog, glstuff.fragShader);
 
-		//Attrib things here
+			//Attrib things here
 
 		glLinkProgram(glstuff.prog);	//Link to full program.
 		check_gllink(glstuff.prog);
@@ -248,16 +318,25 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
     add_offset(addoffset);
     set_uniforms();
 	*/
-}	
+}
+
+void Render_Sphere(Sphere s){
+	glUseProgram(glstuff.prog);
+	glBindVertexArray(glstuff.vertexarray);
+	
+}
+	
 void Render(){
 	glClearColor(0,0,0,0);
 	glClear(GL_COLOR_BUFFER_BIT);
 	glClear(GL_DEPTH_BUFFER_BIT);
 	glUseProgram(glstuff.prog);
+
+
 	glBindVertexArray(glstuff.vertexarray);
 //	glActiveTexture(GL_TEXTURE0);
 //	glBindTexture(GL_TEXTURE_2D, glstuff.tex_output);
-	glDrawArrays(GL_TRIANGLE_STRIP,0,4);
+//	glDrawElements(GL_TRIANGLE,
 	return;
 }
 int main(int argc, char * argv[]){
