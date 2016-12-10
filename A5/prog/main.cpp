@@ -59,6 +59,7 @@ using namespace std;
 
 Camera cam;
 
+float speed = 1;
 /*
 GLfloat step = 0.1;
 GLfloat trans[3][3] = {{1,0,0},{0,1,0},{0,0,1}};
@@ -193,21 +194,7 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
         glfwSetWindowShouldClose(window, GL_TRUE);
 
     float move = PI/200.f;
-/*
-    if(key == GLFW_KEY_W)
-      cam.pos += cam.dir*move;
-    if(key == GLFW_KEY_S)
-      cam.pos -= cam.dir*move;
-    if(key == GLFW_KEY_D)
-      cam.pos += cam.right*move;
-    if(key == GLFW_KEY_A)
-      cam.pos -= cam.right*move;
-    if(key == GLFW_KEY_E)
-      cam.pos += cam.up*move;
-    if(key == GLFW_KEY_Q)
-      cam.pos -= cam.up*move;
 
-*/		
 		if(key == GLFW_KEY_E)
 			cam.rotateCamera(0,-move);
 		if(key == GLFW_KEY_Q)
@@ -224,6 +211,15 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
 		}
 		if(key == GLFW_KEY_D){
 			cam.rotateCamera(move,0);
+		}
+		if(key == GLFW_KEY_Z){
+			speed -= 0.001f;
+		}
+		if(key == GLFW_KEY_X){
+			speed += 0.001f;
+		}
+		if(key == GLFW_KEY_P){
+			speed = 0;
 		}
 
 		if(length(cam.pos) < 0.2){
@@ -306,10 +302,10 @@ void Render(Object objs[4]){
 			glBufferData(GL_ARRAY_BUFFER,sizeof(unsigned int)*s->indices.size(),s->indices.data(),GL_DYNAMIC_DRAW);
 
 
+
+		//This bit is currently broken. Incorrectly adapting the modelviews.
 			//Update model-view uniform
-			mat4 modelview = &s ->modelview;
-			//TODO: Make it based off the thing it orbits. (Prior element in list)
-			//TODO: 
+			mat4 modelview = mat4(s->modelview); //Supposed to set it to the predicesors.
 			for(int j=i; j>0; j--){
 				modelview[3] += objs[j].modelview[3];
 			}
@@ -317,8 +313,7 @@ void Render(Object objs[4]){
 		glUniformMatrix4fv(glGetUniformLocation(glstuff.prog, "modelviewMatrix"),
 	            1,
 	            false,
-	            modelview[0][0]);
-
+	            &modelview[0][0]);
 
 		//Setup texture: (IE, load them)
 		if(((*s).texture.data) != NULL){
@@ -364,19 +359,17 @@ int main(int argc, char * argv[]){
 	
 	#define SPHERE_QUAL 128	
 
-
-
-
 	cam.pos = glm::vec3(0,0,4);
 	Object bodies[4];
 	
 	#define mylog(X) log(X)/50.f //Note, this is from KM, to 0->10ish space.
 
+	#define tilttovec(X)	vec3(0,1,0)
+
 	float sun_r		=	mylog(SUN_RADIUS);
 	float earth_r = mylog(EARTH_RADIUS);
 	float moon_r  = mylog(MOON_RADIUS);
 	
-
 	generateSphere(&SPACE,10,SPHERE_QUAL,SPHERE_QUAL);
 	loadTexture(&SPACE,"./textures/notquite_space.png");
 	rotateObjPos(&SPACE,glm::vec3(-1,0,0),torad(90));	//Rotate object for texture
@@ -396,12 +389,20 @@ int main(int argc, char * argv[]){
 	moveObj(&EARTH,vec3(0,0,mylog(EARTH_P_DIST)*5));
 	moveObj(&MOON,vec3(0,0,mylog(MOON_P_DIST)*5));
 
+	speed =0.01;
 	while(!glfwWindowShouldClose(window))
 	{ //Main loop.
 		Render(bodies);
     glfwSwapBuffers(window);
 		glfwPollEvents();
 
+		
+		rotateObjPos(&SUN,tilttovec(torad(SUN_TILT)),SUN_ROTATION*speed);
+		rotateObjPos(&EARTH,tilttovec(torad(EARTH_TILT)),EARTH_ROTATION*speed);
+		rotateObjPos(&MOON,tilttovec(torad(MOON_TILT)),MOON_ROTATION*speed);
+
+		rotateObj(&EARTH,vec3(0,1,0),EARTH_ORBIT*speed);
+		rotateObj(&MOON,vec3(0,1,0),MOON_ORBIT*speed);
 	}
 	glfwTerminate();	//Kill the glfw interface
 }
