@@ -8,7 +8,8 @@
 
 // interpolated colour received from vertex stage
 
-in vec2 uv;
+in vec2 FragUV;
+in vec3 FragNormal;
 
 // first output is mapped to the framebuffer's colour index by default
 out vec4 FragmentColour;
@@ -19,7 +20,7 @@ uniform sampler2D image;
 void main(void)
 {
 	vec4 colour;
-	vec2 coord = uv;
+	vec2 coord = FragUV;
 
 
 //	coord.x /= dimentions.x;
@@ -34,6 +35,9 @@ void main(void)
 //	colour = texture(image,uv);
 	colour = texture(image,coord);
 	
-	colour = vec4(0.3);
+	colour = vec4(FragNormal,0);
+
+	colour = vec4(vec3(gl_FragCoord.z),1.0f);
+
     FragmentColour = colour;
 }

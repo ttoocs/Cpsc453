@@ -30,9 +30,13 @@
 #include "camera.cpp"
 				//Include Jeremy's camera.
 
+#include "genShapes.cpp"
+
+
 #define WIDTH 512*1
 #define HEIGHT 512*1
 
+#define WIREFRAME
 #define DEBUG
 
 #ifdef DEBUG
@@ -41,12 +45,16 @@
 	#define DEBUGMSG	;
 #endif
 
+
+#define torad(X)	((float)(X*PI/180.f))
+
 // #define V_PUSH(X,a,b,c) X.push_back(a); X.push_back(b); X.push_back(c);
 #define V_PUSH(X,a,b,c) X.push_back(vec3(a,b,c));	//Re-wrttien for GLM.
 
 
 using namespace std;
 
+Camera cam;
 
 /*
 GLfloat step = 0.1;
@@ -93,7 +101,6 @@ void reset_trans(){
 
 */
 
-std::vector<glm::vec3> vertices;
 
 struct GLSTUFF{
 	GLuint prog;
@@ -107,79 +114,7 @@ struct GLSTUFF{
 };
 GLSTUFF glstuff;
 
-typedef struct Sphere Sphere;
-struct Sphere{
-	std::vector<glm::vec3> positions;
-	std::vector<glm::vec3> normals;			//What are these used for? -- Lighting.
-	std::vector<glm::vec2> uvs;			//My guess this is for textures?
-	std::vector<unsigned int> indices;
-	float radius;
-	int divisions;
 
-};
-
-//Generates a sphere based on it's radious and divisions.
-void generateSphere(Sphere *s)
-{
-	float uStep = 1.f/(float)(s->divisions-1);
-	#define vStep uStep
-
-	float u = 0.f;
-
-	//Traversing u
-	for(int i=0; i<s->divisions; i++)
-	{
-
-//		vec3 center = vec3(	s->radius*cos(2.f*PI*u), 0.f,	s->radius*sin(2.f*PI*u));
-		vec3 center= vec3(0);
-
-		float v = 0.f;
-
-		//Traversing v
-		for(int j=0; j<s->divisions; j++)
-		{
-//			vec3 pos = vec3(	(s->radius+t_r*cos(2.f*PI*v)) * cos(2.f*PI*u),
-//								t_r*sin(2.f*PI*v),
-//								(s->radius+t_r*cos(2.f*PI*v)) * sin(2.f*PI*u));
-
-
-			vec3 pos = vec3(s->radius*cos(2.f*PI*v)*sin(2.f*PI*u),	//NOT AT ALL A SPHERE.
-											s->radius*sin(2.f*PI*v)*cos(2.f*PI*u),
-											s->radius*cos(2.f*PI*u));
-		
-			vec3 normal = normalize(pos - center);	
-			
-			s->positions.push_back(pos);
-			s->normals.push_back(normal);
-			s->uvs.push_back(vec2(u, v));
-
-			v += vStep;
-		}
-
-		u += uStep;
-	}
-
-	for(int i=0; i<s->divisions-1; i++)
-	{
-		for(int j=0; j<s->divisions -1; j++)
-		{
-			unsigned int p00 = i*s->divisions+j;
-			unsigned int p01 = i*s->divisions+j+1;
-			unsigned int p10 = (i+1)*s->divisions + j;
-			unsigned int p11 = (i+1)*s->divisions + j + 1;
-
-			s->indices.push_back(p00);
-			s->indices.push_back(p10);
-			s->indices.push_back(p01);
-
-      s->indices.push_back(p01);
-      s->indices.push_back(p10);
-      s->indices.push_back(p11);
-
-		}
-	}
-	#undef vStep
-}
 
 /*
 void set_uniforms(){
@@ -200,7 +135,11 @@ void initalize_GL(){
 	
 		glEnable(GL_DEPTH_TEST); 		//Turn on depth testing
 		glDepthFunc(GL_LEQUAL); 			//Configure depth testing
+		//glDepthFunc(GL_ALWAYS);
 
+		#ifdef WIREFRAME
+			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+		#endif
 	
 		//OpenGL programs
 		glstuff.prog = glCreateProgram();
@@ -251,7 +190,7 @@ void initalize_GL(){
 		//Push square
 
 		//Initalize with a beauitful triangle.
-		V_PUSH(vertices,1,0,0);
+/*		V_PUSH(vertices,1,0,0);
 		V_PUSH(vertices,0,1,0);
 		V_PUSH(vertices,1,1,0);
 		
@@ -259,7 +198,7 @@ void initalize_GL(){
 		glBindBuffer(GL_ARRAY_BUFFER, glstuff.vertexbuffer);
 		glBufferData(GL_ARRAY_BUFFER, vertices.size()*sizeof(glm::vec3), vertices.data(), GL_STATIC_DRAW);
  		glBindBuffer(GL_ARRAY_BUFFER, 0);
-   	glBindVertexArray(0);
+   	glBindVertexArray(0); */
 
 		//Texture stuff
 		
@@ -297,6 +236,26 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
 {
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
         glfwSetWindowShouldClose(window, GL_TRUE);
+
+    float move = 0.05f;
+
+    if(key == GLFW_KEY_W)
+      cam.pos += cam.dir*move;
+    else if(key == GLFW_KEY_S)
+      cam.pos -= cam.dir*move;
+    else if(key == GLFW_KEY_D)
+      cam.pos += cam.right*move;
+    else if(key == GLFW_KEY_A)
+      cam.pos -= cam.right*move;
+     else if(key == GLFW_KEY_E)
+      cam.pos += cam.up*move;
+    else if(key == GLFW_KEY_Q)
+      cam.pos -= cam.up*move;
+		else if(key == GLFW_KEY_Z)
+			cam.rotateCamera(move,0);
+		else if(key == GLFW_KEY_X)
+			cam.rotateCamera(-move,0);
+
 /*    if (key == GLFW_KEY_1 && action == GLFW_PRESS){
 	scene++;
     	changeScene();
@@ -353,13 +312,36 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
 	*/
 }
 
-void Render_Sphere(Sphere *s){	//Renders an individual sphere.
+void Update_Perspective(){
+	glm::mat4 perspectiveMatrix = glm::perspective(torad(80.f), 1.f, 0.1f, 20.f);
+  glUniformMatrix4fv(glGetUniformLocation(glstuff.prog, "perspectiveMatrix"),
+            1,
+            false,
+            &perspectiveMatrix[0][0]);
+}
+
+void Update_Uniforms(){
+	Update_Perspective();
+	glm::mat4 camMatrix = cam.getMatrix();
+  glUniformMatrix4fv(glGetUniformLocation(glstuff.prog, "cameraMatrix"),
+            1,
+            false,
+            &camMatrix[0][0]);
+
+
+}
+	
+
+
+void Render_Object(Object *s){	//Renders an individual sphere.
 	glClearColor(0,0,0,0);
 	glClear(GL_COLOR_BUFFER_BIT);
 	glClear(GL_DEPTH_BUFFER_BIT);
 	glUseProgram(glstuff.prog);
 	glBindVertexArray(glstuff.vertexarray);
 	glUseProgram(glstuff.prog);
+	
+	Update_Uniforms();
 
 	//Copy data:
 		glBindBuffer(GL_ARRAY_BUFFER,glstuff.vertexbuffer);	//Setup data-copy (points)
@@ -400,11 +382,13 @@ void Render(){
 }
 int main(int argc, char * argv[]){
 
-	Sphere testsphere;
-	testsphere.radius = 1;
-	testsphere.divisions = 5;
+	Object testsphere;
 
-	generateSphere(&testsphere);
+	//generateSphere(&testsphere,1,4);
+	
+	generateTorus(&testsphere,0.5f,0.25f,100,20);
+	
+//	generateTri(&testsphere);
 
 	printf("sizeof %d \n\n",testsphere.positions.size());
 
@@ -421,7 +405,7 @@ int main(int argc, char * argv[]){
 
 	while(!glfwWindowShouldClose(window))
 	{ //Main loop.
-		Render_Sphere(&testsphere);
+		Render_Object(&testsphere);
     glfwSwapBuffers(window);
 		glfwPollEvents();
 

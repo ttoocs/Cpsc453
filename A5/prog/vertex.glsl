@@ -15,6 +15,11 @@ layout(location = 2) in vec2 UV;
 out vec3 FragNormal;
 out vec2 FragUV;
 
+
+#define PI 3.1415926535897
+
+#define torad(X) (X*PI/180)
+
 #define IDENTITY4 mat4(1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1)
 
 uniform mat4 cameraMatrix=IDENTITY4;
@@ -31,5 +36,5 @@ void main()
 
 	FragUV = UV;
 
-	gl_Position = perspectiveMatrix*cameraMatrix*modelviewMatrix*(vec4(VertexPosition, 1.0) + vec4(0,0,1,0));
+	gl_Position = perspectiveMatrix*cameraMatrix*modelviewMatrix*(vec4(VertexPosition, 1.0));
 }
