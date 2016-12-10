@@ -253,60 +253,6 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
 		if(key == GLFW_KEY_X)
 			cam.rotateCamera(-move,0);
 
-/*    if (key == GLFW_KEY_1 && action == GLFW_PRESS){
-	scene++;
-    	changeScene();
-    }
-    if (key == GLFW_KEY_2 && action == GLFW_PRESS){
-	scene--;
-	changeScene();
-    }
-
-    if(key == GLFW_KEY_Z)
-	step -= 0.01;
-    if(key == GLFW_KEY_X)
-	step += 0.01;
-
-    float addoffset[3]={0,0,0};
-    if(key == GLFW_KEY_W){
-	addoffset[2]-=step;	//FORWARD/BACK
-//	cout << "Z: " << offset[2] << endl;
-    }	
-    if(key == GLFW_KEY_S){
-	addoffset[2]+=step;
-//	cout << "Z: " << offset[2] << endl;
-    }
-    if(key == GLFW_KEY_A){
- 	recalc_trans(step/PI);
-    }
-    if(key == GLFW_KEY_D){
-	recalc_trans(-step/PI);
-    }
-    if(key == GLFW_KEY_Q){
-	addoffset[1]+=step;	//
-    }
-    if(key == GLFW_KEY_E){
-	addoffset[1]-=step;
-    }
-    if(key == GLFW_KEY_R){
-	FOV-=step/PI;		//FOV
-//	cout << FOV << endl;
-    }
-    if(key == GLFW_KEY_F){
-	FOV+=step/PI;
-//	cout << FOV << endl;
-    }
-    if(key == GLFW_KEY_P){
-	particles++;
-	changeScene();
-    }
-    if(key == GLFW_KEY_L){
-	particles--;
-	changeScene();
-    }
-    add_offset(addoffset);
-    set_uniforms();
-	*/
 }
 
 void Update_Perspective(){
@@ -323,7 +269,6 @@ void Update_Uniforms(){
             1,
             false,
             &camMatrix[0][0]);
-
 
 }
 	
@@ -351,6 +296,13 @@ void Render_Object(Object *s){	//Renders an individual object.
 
 		glBindBuffer(GL_ARRAY_BUFFER,glstuff.indiciesbuffer);	//Setup data-copy	(indicies)
 		glBufferData(GL_ARRAY_BUFFER,sizeof(unsigned int)*s->indices.size(),s->indices.data(),GL_DYNAMIC_DRAW);
+
+	//Setup texture: (IE, load them)
+		if(s->texture->components==3)
+      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, s->texture->tWidth, s->texture->tHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, s->texture->data);
+    else if(components==4)
+      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, s->texture->tWidth, s->texture->tHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, s->texture->data);
+
 
 	//Actually draw.
 
