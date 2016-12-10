@@ -34,7 +34,7 @@
 #include "gl_helpers.cpp"
 #include "camera.cpp"
 #include "shapes.cpp"
-
+#include "planets.h"
 
 #define WIDTH 512*2
 #define HEIGHT 512*2
@@ -119,22 +119,6 @@ struct GLSTUFF{
 GLSTUFF glstuff;
 
 
-
-/*
-void set_uniforms(){
-	glUseProgram(glstuff.cprog);
-//	cout << "updating uniforms" << endl;
-	GLuint uniFOV,uniOff,uniTrans;
-
-	uniFOV =   glGetUniformLocation(glstuff.cprog,"FOV");
-	uniOff =   glGetUniformLocation(glstuff.cprog,"offset");
-	uniTrans = glGetUniformLocation(glstuff.cprog,"transform");
-	
-	glUniform1f(uniFOV,FOV);
-	glUniform3fv(uniOff,1,offset);
-	glUniformMatrix3fv(uniTrans,1,0,*trans);
-}
-*/
 void initalize_GL(){
 	
 		glEnable(GL_DEPTH_TEST); 		//Turn on depth testing
@@ -223,7 +207,12 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
     if(key == GLFW_KEY_Q)
       cam.pos -= cam.up*move;
 
-*/			
+*/		
+		if(key == GLFW_KEY_E)
+			cam.rotateCamera(0,-move);
+		if(key == GLFW_KEY_Q)
+			cam.rotateCamera(0,move);
+			
 		if(key == GLFW_KEY_W){
 			cam.pos += cam.dir*move;
 		}
@@ -231,17 +220,43 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
 			cam.pos -= cam.dir*move;
 		}
 		if(key == GLFW_KEY_A){
-//			cam.pos += cam.right*move;
 			cam.rotateCamera(-move,0);
 		}
 		if(key == GLFW_KEY_D){
-//			cam.pos -= cam.right*move;
 			cam.rotateCamera(move,0);
 		}
 
-
+		if(length(cam.pos) < 0.2){
+			cam.pos = cam.pos*1.1f;
+		}
+		if(length(cam.pos) > 10){
+			cam.pos = cam.pos/1.01f;
+		}
+		
 
 }
+bool mousePressed;
+void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
+{
+  if( (action == GLFW_PRESS) || (action == GLFW_RELEASE) )
+    mousePressed = !mousePressed;
+}
+
+vec2 mousePos;
+void mousePosCallback(GLFWwindow* window, double xpos, double ypos)
+{
+  int vp[4];
+  glGetIntegerv(GL_VIEWPORT, vp);
+
+  vec2 newPos = vec2(xpos/(double)vp[2], -ypos/(double)vp[3])*2.f - vec2(1.f);
+
+  vec2 diff = newPos - mousePos;
+  if(mousePressed)
+    cam.rotateCamera(-diff.x, diff.y);
+
+  mousePos = newPos;
+}
+
 
 void Update_Perspective(){
 	glm::mat4 perspectiveMatrix = glm::perspective(torad(80.f), 1.f, 0.1f, 20.f);
@@ -329,6 +344,9 @@ int main(int argc, char * argv[]){
 	glEnable( GL_DEBUG_OUTPUT_SYNCHRONOUS);	
 
 	glfwSetKeyCallback(window, KeyCallback);
+	glfwSetCursorPosCallback(window, mousePosCallback);
+	glfwSetMouseButtonCallback(window, mouseButtonCallback);	
+
 
 	initalize_GL();
 
@@ -341,23 +359,37 @@ int main(int argc, char * argv[]){
 	
 	#define SPHERE_QUAL 128	
 
-	cam.pos = glm::vec3(0,0,2);
+
+
+
+	cam.pos = glm::vec3(0,0,4);
 	Object bodies[4];
-	generateSphere(&EARTH,0.3,SPHERE_QUAL,SPHERE_QUAL);
-	loadTexture(&EARTH,"./textures/texture_earth_surface.jpg");
-	rotateObjPos(&EARTH,glm::vec3(-1,0,0),torad(90));
+	
+	#define mylog(X) log(X)/50.f //Note, this is from KM, to 0->10ish space.
 
-	generateSphere(&MOON,0.1,SPHERE_QUAL,SPHERE_QUAL);
-	loadTexture(&MOON,"./textures/texture_moon.jpg");
-	rotateObjPos(&MOON,glm::vec3(-1,0,0),torad(90));
-
-	generateSphere(&SUN,1,SPHERE_QUAL,SPHERE_QUAL);
-	loadTexture(&SUN,"./textures/texture_sun.jpg");
-	rotateObjPos(&SUN,glm::vec3(-1,0,0),torad(90));
+	float sun_r		=	mylog(SUN_RADIUS);
+	float earth_r = mylog(EARTH_RADIUS);
+	float moon_r  = mylog(MOON_RADIUS);
+	
 
 	generateSphere(&SPACE,10,SPHERE_QUAL,SPHERE_QUAL);
 	loadTexture(&SPACE,"./textures/notquite_space.png");
-	rotateObjPos(&SPACE,glm::vec3(-1,0,0),torad(90));
+	rotateObjPos(&SPACE,glm::vec3(-1,0,0),torad(90));	//Rotate object for texture
+
+	generateSphere(&SUN,sun_r,SPHERE_QUAL,SPHERE_QUAL);
+	loadTexture(&SUN,"./textures/texture_sun.jpg");
+	rotateObjPos(&SUN,glm::vec3(-1,0,0),torad(90));		//Rotate object for texture
+
+	generateSphere(&EARTH,earth_r,SPHERE_QUAL,SPHERE_QUAL);
+	loadTexture(&EARTH,"./textures/texture_earth_surface.jpg");
+	rotateObjPos(&EARTH,glm::vec3(-1,0,0),torad(90)); //Rotate object for texture
+
+	generateSphere(&MOON,moon_r,SPHERE_QUAL,SPHERE_QUAL);
+	loadTexture(&MOON,"./textures/texture_moon.jpg");
+	rotateObjPos(&MOON,glm::vec3(-1,0,0),torad(90));	//Rotate object for texture
+
+	moveObj(&EARTH,vec3(0,0,mylog(EARTH_P_DIST)*5));
+	moveObj(&MOON,vec3(0,0,mylog(MOON_P_DIST)*5));
 
 	while(!glfwWindowShouldClose(window))
 	{ //Main loop.

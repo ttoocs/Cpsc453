@@ -43,6 +43,15 @@ void loadTexture(Object *obj, const char* filename){
 
 }
 
+void moveObj(Object *obj, glm::vec3 pos){
+	obj->modelview[3][0] += pos[0]; 
+	obj->modelview[3][1] += pos[1]; 
+	obj->modelview[3][2] += pos[2]; 
+}
+/*void moveObjPos(Object *obj, glm::vec3 pos){
+	moveObj(obj,pos);
+} */
+
 void rotateObj(Object *obj,vec3 axis, float radians){
 	mat4 trans = rotateAbout(axis,radians);
 
