@@ -26,15 +26,18 @@
 #include	"glm/glm.hpp"
 #include	"glm/gtc/matrix_transform.hpp"
 
+
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
+
+
 #include "gl_helpers.cpp"
 #include "camera.cpp"
-				//Include Jeremy's camera.
-
 #include "genShapes.cpp"
 
 
-#define WIDTH 512*1
-#define HEIGHT 512*1
+#define WIDTH 512*2
+#define HEIGHT 512*2
 
 #define WIREFRAME
 #define DEBUG
@@ -111,6 +114,7 @@ struct GLSTUFF{
 	GLuint normalbuffer;
 	GLuint uvsbuffer;
 	GLuint indiciesbuffer;
+	GLuint texture;
 };
 GLSTUFF glstuff;
 
@@ -179,28 +183,21 @@ void initalize_GL(){
 		glEnableVertexAttribArray(2);
 		
 		glBindVertexArray(glstuff.vertexarray);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,glstuff.indiciesbuffer);	//Indicies no need fancy?
-
-//		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(vec3), 0); //INDICIES
-//		glEnableVertexAttribArray(1);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,glstuff.indiciesbuffer);	//Indices
 
 		glBindBuffer(GL_ARRAY_BUFFER, 0);
 		glBindVertexArray(0);
-	
-		//Push square
-
-		//Initalize with a beauitful triangle.
-/*		V_PUSH(vertices,1,0,0);
-		V_PUSH(vertices,0,1,0);
-		V_PUSH(vertices,1,1,0);
-		
-		glBindVertexArray(glstuff.vertexarray);
-		glBindBuffer(GL_ARRAY_BUFFER, glstuff.vertexbuffer);
-		glBufferData(GL_ARRAY_BUFFER, vertices.size()*sizeof(glm::vec3), vertices.data(), GL_STATIC_DRAW);
- 		glBindBuffer(GL_ARRAY_BUFFER, 0);
-   	glBindVertexArray(0); */
 
 		//Texture stuff
+
+		glGenTextures(1,&glstuff.texture);
+		glBindTexture(GL_TEXTURE_2D, glstuff.texture);
+		
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER );//GL_REPEAT ); //GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER );// GL_REPEAT ); //GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);	//Sets paramiters of the texture.
+		
 		
 	/*
 		float color[] = { 1.0f, 0.0f, 0.0f, 1.0f };
@@ -237,23 +234,23 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
         glfwSetWindowShouldClose(window, GL_TRUE);
 
-    float move = 0.05f;
+    float move = PI/200.f;
 
     if(key == GLFW_KEY_W)
       cam.pos += cam.dir*move;
-    else if(key == GLFW_KEY_S)
+    if(key == GLFW_KEY_S)
       cam.pos -= cam.dir*move;
-    else if(key == GLFW_KEY_D)
+    if(key == GLFW_KEY_D)
       cam.pos += cam.right*move;
-    else if(key == GLFW_KEY_A)
+    if(key == GLFW_KEY_A)
       cam.pos -= cam.right*move;
-     else if(key == GLFW_KEY_E)
+    if(key == GLFW_KEY_E)
       cam.pos += cam.up*move;
-    else if(key == GLFW_KEY_Q)
+    if(key == GLFW_KEY_Q)
       cam.pos -= cam.up*move;
-		else if(key == GLFW_KEY_Z)
+		if(key == GLFW_KEY_Z)
 			cam.rotateCamera(move,0);
-		else if(key == GLFW_KEY_X)
+		if(key == GLFW_KEY_X)
 			cam.rotateCamera(-move,0);
 
 /*    if (key == GLFW_KEY_1 && action == GLFW_PRESS){
@@ -321,7 +318,6 @@ void Update_Perspective(){
 }
 
 void Update_Uniforms(){
-	Update_Perspective();
 	glm::mat4 camMatrix = cam.getMatrix();
   glUniformMatrix4fv(glGetUniformLocation(glstuff.prog, "cameraMatrix"),
             1,
@@ -333,7 +329,7 @@ void Update_Uniforms(){
 	
 
 
-void Render_Object(Object *s){	//Renders an individual sphere.
+void Render_Object(Object *s){	//Renders an individual object.
 	glClearColor(0,0,0,0);
 	glClear(GL_COLOR_BUFFER_BIT);
 	glClear(GL_DEPTH_BUFFER_BIT);
@@ -384,9 +380,9 @@ int main(int argc, char * argv[]){
 
 	Object testsphere;
 
-	//generateSphere(&testsphere,1,4);
+	generateSphere(&testsphere,1,64,64);
 	
-	generateTorus(&testsphere,0.5f,0.25f,100,20);
+	//generateTorus(&testsphere,0.5f,0.25f,100,20);
 	
 //	generateTri(&testsphere);
 
@@ -402,6 +398,7 @@ int main(int argc, char * argv[]){
 
 	initalize_GL();
 
+	Update_Perspective();	//updates perspective uniform, as it's never changed.
 
 	while(!glfwWindowShouldClose(window))
 	{ //Main loop.

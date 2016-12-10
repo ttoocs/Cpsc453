@@ -1,15 +1,20 @@
 
-#define PI 3.1415926535897939
-
-#include  "glm/glm.hpp"
-#include  "glm/gtc/matrix_transform.hpp"
-
 
 #define torad(X)  ((float)(X*PI/180.f))
 
 #define V_PUSH(X,a,b,c) X.push_back(vec3(a,b,c)); //Re-wrttien for GLM.
 
+#define P_indices(X,a,b,c)	      X.push_back(a); X.push_back(b); X.push_back(c);
 
+
+typedef struct TextureStuff;
+struct TextureStuff{
+	int * components;	
+	int * tWidth;
+	int * tHeight;
+	unsigned char* data;
+
+};
 
 typedef struct Object Object; 
 struct Object{ 
@@ -17,8 +22,9 @@ struct Object{
   std::vector<glm::vec3> normals;     //What are these used for? -- Lighting. 
   std::vector<glm::vec2> uvs;     //My guess this is for textures? 
   std::vector<unsigned int> indices; 
- 
+	TextureStuff texture;
 };
+
 
 
 void nukeshape(Object *obj){
@@ -26,6 +32,11 @@ void nukeshape(Object *obj){
 	obj->normals.clear();
 	obj->uvs.clear();
 	obj->indices.clear();
+}
+
+void loadTexture(Object *obj, const char* filename){
+	obj->texture.data = stbi_load(filename, obj->texture.tWidth, obj->texture.tHeight, obj->texture.components, 0);
+	//may cause some memoryleeks.
 }
 
 void generateTri(Object *obj){	//Currently used just for debugging.
@@ -44,6 +55,7 @@ void generateTri(Object *obj){	//Currently used just for debugging.
 
 
 }	
+
 
 //u parameterizes in the big circle, v parameterizes in the little circle
 //c_r is the circle radius, t_r is the tube radius
@@ -116,25 +128,44 @@ void generateSphere(Object * obj, float radius, int udiv, int vdiv){
 	float uStep = 1.f/(float)(udiv-1);
 	float vStep = 1.f/(float)(vdiv-1);
 
+	uStep *= PI;
+	vStep *= 2.f*PI;
+
 	float u=0.f;
 	for(int i=0; i < udiv; i++){ //u
 		float v = 0.f;
 		for(int j=0; j < vdiv; j++){ //v
 
-			//GENPOS
-			//put normal,uvs
+			glm::vec3 pos = glm::vec3(
+											radius*sin(u)*cos(v),
+											radius*sin(u)*sin(v),
+											radius*cos(u)
+											);			
 
+			obj->positions.push_back(pos);
+			obj->normals.push_back(pos);		//Normal of a sphere at origin is just the pos.
+			obj->uvs.push_back(glm::vec2(u,v));
+			
 			v+=vStep;
 		}
 		u+=uStep;
 	}
 
 	//Put indicies
-	for(int i=0; i < udiv; i++){ //u
-		for(int j=0; j < vdiv; j++){ //v
+	for(int i=0; i < udiv-1; i++){ //u
+		for(int j=0; j < vdiv-1; j++){ //v
+					unsigned int p00 = i*vdiv+j;
+					unsigned int p01 = i*vdiv+j+1;
+					unsigned int p10 = (i+1)*vdiv + j;
+					unsigned int p11 = (i+1)*vdiv + j + 1;
+					//p00 = this,
+					//p01 = "right"
+					//p10 = "down"
+					//p11 = "right+down"
+				
+					P_indices(obj->indices,p00,p01,p11);					
+					P_indices(obj->indices,p00,p10,p11);					
 
-			//
-			//put indicies
 
 		}
 	}
