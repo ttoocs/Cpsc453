@@ -33,7 +33,7 @@
 
 #include "gl_helpers.cpp"
 #include "camera.cpp"
-#include "genShapes.cpp"
+#include "shapes.cpp"
 
 
 #define WIDTH 512*2
