@@ -297,6 +297,14 @@ void Render_Object(Object *s){	//Renders an individual object.
 		glBindBuffer(GL_ARRAY_BUFFER,glstuff.indiciesbuffer);	//Setup data-copy	(indicies)
 		glBufferData(GL_ARRAY_BUFFER,sizeof(unsigned int)*s->indices.size(),s->indices.data(),GL_DYNAMIC_DRAW);
 
+
+	//Update model-view uniform
+	glUniformMatrix4fv(glGetUniformLocation(glxstuff.prog, "modelviewMatrix"),
+            1,
+            false,
+            &s->modelview[0][0]);
+
+
 	//Setup texture: (IE, load them)
 	if(((*s).texture.data) != NULL){
 		if(s->texture.components==3)

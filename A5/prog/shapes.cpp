@@ -23,6 +23,8 @@ struct Object{
   std::vector<glm::vec2> uvs;     //My guess this is for textures? 
   std::vector<unsigned int> indices; 
 	TextureStuff texture;
+	glm::mat4 modelview=mat4(1.f);
+	
 };
 
 
@@ -32,6 +34,7 @@ void nukeshape(Object *obj){
 	obj->normals.clear();
 	obj->uvs.clear();
 	obj->indices.clear();
+	modelview=mat4(1.f);
 }
 
 void loadTexture(Object *obj, const char* filename){
