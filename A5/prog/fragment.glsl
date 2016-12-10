@@ -33,11 +33,11 @@ void main(void)
 	coord.y /= 2;
 
 //	colour = texture(image,uv);
-	colour = texture(image,coord);
+	colour = texture(image,FragUV);
 	
-	colour = vec4(FragNormal,0);
+//	colour = vec4(FragNormal,0);
 
-	colour = vec4(vec3(gl_FragCoord.z),1.0f);
+//	colour = vec4(vec3(gl_FragCoord.z),1.0f);
 
     FragmentColour = colour;
 }

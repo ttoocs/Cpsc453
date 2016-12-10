@@ -9,10 +9,10 @@
 
 typedef struct TextureStuff;
 struct TextureStuff{
-	int * components;	
-	int * tWidth;
-	int * tHeight;
-	unsigned char* data;
+	int components;	
+	int tWidth;
+	int tHeight;
+	unsigned char* data=NULL;
 
 };
 
@@ -35,8 +35,9 @@ void nukeshape(Object *obj){
 }
 
 void loadTexture(Object *obj, const char* filename){
-	obj->texture.data = stbi_load(filename, obj->texture.tWidth, obj->texture.tHeight, obj->texture.components, 0);
-	//may cause some memoryleeks.
+
+  obj->texture.data = stbi_load(filename, &(obj->texture.tWidth), &(obj->texture.tHeight), &(obj->texture.components), 0);
+
 }
 
 void generateTri(Object *obj){	//Currently used just for debugging.
@@ -128,8 +129,8 @@ void generateSphere(Object * obj, float radius, int udiv, int vdiv){
 	float uStep = 1.f/(float)(udiv-1);
 	float vStep = 1.f/(float)(vdiv-1);
 
-	uStep *= PI;
-	vStep *= 2.f*PI;
+	#define uScale  u*PI
+	#define vScale  v*2.f*PI
 
 	float u=0.f;
 	for(int i=0; i < udiv; i++){ //u
@@ -137,20 +138,23 @@ void generateSphere(Object * obj, float radius, int udiv, int vdiv){
 		for(int j=0; j < vdiv; j++){ //v
 
 			glm::vec3 pos = glm::vec3(
-											radius*sin(u)*cos(v),
-											radius*sin(u)*sin(v),
-											radius*cos(u)
+											radius*sin(uScale)*cos(vScale),
+											radius*sin(uScale)*sin(vScale),
+											radius*cos(uScale)
 											);			
 
 			obj->positions.push_back(pos);
 			obj->normals.push_back(pos);		//Normal of a sphere at origin is just the pos.
-			obj->uvs.push_back(glm::vec2(u,v));
+			obj->uvs.push_back(glm::vec2(v,u));
 			
 			v+=vStep;
 		}
 		u+=uStep;
 	}
 
+	#undef uScale
+	#undef vScale
+	
 	//Put indicies
 	for(int i=0; i < udiv-1; i++){ //u
 		for(int j=0; j < vdiv-1; j++){ //v
@@ -169,6 +173,7 @@ void generateSphere(Object * obj, float radius, int udiv, int vdiv){
 
 		}
 	}
+
 
 }
 

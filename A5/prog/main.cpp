@@ -39,7 +39,7 @@
 #define WIDTH 512*2
 #define HEIGHT 512*2
 
-#define WIREFRAME
+//#define WIREFRAME
 #define DEBUG
 
 #ifdef DEBUG
@@ -193,8 +193,8 @@ void initalize_GL(){
 		glGenTextures(1,&glstuff.texture);
 		glBindTexture(GL_TEXTURE_2D, glstuff.texture);
 		
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER );//GL_REPEAT ); //GL_CLAMP_TO_EDGE);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER );// GL_REPEAT ); //GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT ); //GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT ); //GL_CLAMP_TO_EDGE);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);	//Sets paramiters of the texture.
 		
@@ -298,12 +298,13 @@ void Render_Object(Object *s){	//Renders an individual object.
 		glBufferData(GL_ARRAY_BUFFER,sizeof(unsigned int)*s->indices.size(),s->indices.data(),GL_DYNAMIC_DRAW);
 
 	//Setup texture: (IE, load them)
-		if(s->texture->components==3)
-      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, s->texture->tWidth, s->texture->tHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, s->texture->data);
-    else if(components==4)
-      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, s->texture->tWidth, s->texture->tHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, s->texture->data);
+	if(((*s).texture.data) != NULL){
+		if(s->texture.components==3)
+      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, s->texture.tWidth, s->texture.tHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, (const void *) s->texture.data);
+    else if(s->texture.components==4)
+      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, s->texture.tWidth, s->texture.tHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, (const void *) s->texture.data);
 
-
+	} 
 	//Actually draw.
 
 	glDrawElements(
@@ -330,15 +331,7 @@ void Render(){
 }
 int main(int argc, char * argv[]){
 
-	Object testsphere;
 
-	generateSphere(&testsphere,1,64,64);
-	
-	//generateTorus(&testsphere,0.5f,0.25f,100,20);
-	
-//	generateTri(&testsphere);
-
-	printf("sizeof %d \n\n",testsphere.positions.size());
 
 	GLFWwindow * window = glfw_init(WIDTH,HEIGHT,"Scott Saunders - Assignment 5");	//Init window.
 
@@ -352,6 +345,15 @@ int main(int argc, char * argv[]){
 
 	Update_Perspective();	//updates perspective uniform, as it's never changed.
 
+	Object testsphere;
+
+	generateSphere(&testsphere,1,12,12);
+	//generateTorus(&testsphere,0.5f,0.25f,100,20);
+//	generateTri(&testsphere);
+
+	loadTexture(&testsphere,"./textures/texture_earth_surface.jpg");
+
+	printf("sizeof %d \n\n",testsphere.positions.size());
 	while(!glfwWindowShouldClose(window))
 	{ //Main loop.
 		Render_Object(&testsphere);
