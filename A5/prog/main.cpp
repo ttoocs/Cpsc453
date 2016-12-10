@@ -238,6 +238,7 @@ void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
     mousePressed = !mousePressed;
 }
 
+
 vec2 mousePos;
 void mousePosCallback(GLFWwindow* window, double xpos, double ypos)
 {
