@@ -34,13 +34,34 @@ void nukeshape(Object *obj){
 	obj->normals.clear();
 	obj->uvs.clear();
 	obj->indices.clear();
-	modelview=mat4(1.f);
+	obj->modelview=mat4(1.f);
 }
 
 void loadTexture(Object *obj, const char* filename){
 
   obj->texture.data = stbi_load(filename, &(obj->texture.tWidth), &(obj->texture.tHeight), &(obj->texture.components), 0);
 
+}
+
+void rotateObj(Object *obj,vec3 axis, float radians){
+	mat4 trans = rotateAbout(axis,radians);
+
+	//Via altering modelview
+	obj->modelview = trans* obj->modelview;
+//	//via changing positions.
+//	for(int i=0; i< obj->positions.size(); i++){ //Does 
+//		obj->positions.data()[i] = trans*glm::vec4(obj->positions.data()[i],1);
+//	}
+}
+void rotateObjPos(Object *obj,vec3 axis, float radians){
+	mat4 trans = rotateAbout(axis,radians);
+
+	//Via altering modelview
+//	obj->modelview = trans* obj->modelview;
+	//via changing positions.
+	for(int i=0; i< obj->positions.size(); i++){ //Does 
+		obj->positions.data()[i] = trans*glm::vec4(obj->positions.data()[i],1);
+	}
 }
 
 void generateTri(Object *obj){	//Currently used just for debugging.
@@ -132,8 +153,8 @@ void generateSphere(Object * obj, float radius, int udiv, int vdiv){
 	float uStep = 1.f/(float)(udiv-1);
 	float vStep = 1.f/(float)(vdiv-1);
 
-	#define uScale  u*PI
-	#define vScale  v*2.f*PI
+	#define uScale  (u*PI)
+	#define vScale  (v*2.f*PI)
 
 	float u=0.f;
 	for(int i=0; i < udiv; i++){ //u

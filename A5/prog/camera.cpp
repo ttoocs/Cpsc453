@@ -61,6 +61,8 @@ void Camera::rotateCamera(float x, float y)
 	mat4 rotateAroundY = rotateAbout(vec3(0, 1, 0), x);
 	mat4 rotateAroundX = rotateAbout(right, y);
 
+	pos = (rotateAroundX*rotateAroundY*glm::vec4(pos,0));
+
 	dir = normalize(rotateAroundX*rotateAroundY*vec4(dir, 0));
 	right = normalize(cross(dir, vec3(0, 1, 0)));
 	up =  normalize(cross(right, dir));

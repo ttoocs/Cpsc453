@@ -197,32 +197,6 @@ void initalize_GL(){
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT ); //GL_CLAMP_TO_EDGE);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);	//Sets paramiters of the texture.
-		
-		
-	/*
-		float color[] = { 1.0f, 0.0f, 0.0f, 1.0f };
-		glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, color);
-
-		glGenTextures(1, &glstuff.tex_output);	//tex.output is refrance to an array
-		glActiveTexture(GL_TEXTURE0);		// ??? Makes the 0th texture active...
-		glBindTexture(GL_TEXTURE_2D, glstuff.tex_output);	// bind a named texture to a texturing target  //Connect tex_output to GL_TEXTURE
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER );//GL_REPEAT ); //GL_CLAMP_TO_EDGE);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER );// GL_REPEAT ); //GL_CLAMP_TO_EDGE);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);	//Sets paramiters of the texture.
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, WIDTH, HEIGHT, 0, GL_RGBA, GL_FLOAT, NULL); //target,level,internal,width,height,0,format,type,data
-		glBindImageTexture(0, glstuff.tex_output, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F); //unit,texture,level,layrered,layer,access,format
-			//Binds it to layout 0, .tex_output. level 0, <false>, 0 , access, format
-
-		GLuint tmp = glGetUniformLocation(glstuff.prog,"dimentions");
-		glUniform2i(tmp,WIDTH,HEIGHT);
-
-
-		//Buffer stuff
-		glGenBuffers(1,&glstuff.ssbo);
-		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, glstuff.ssbo);
-		*/
-	
 
 
 }
@@ -235,7 +209,7 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
         glfwSetWindowShouldClose(window, GL_TRUE);
 
     float move = PI/200.f;
-
+/*
     if(key == GLFW_KEY_W)
       cam.pos += cam.dir*move;
     if(key == GLFW_KEY_S)
@@ -248,10 +222,24 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
       cam.pos += cam.up*move;
     if(key == GLFW_KEY_Q)
       cam.pos -= cam.up*move;
-		if(key == GLFW_KEY_Z)
-			cam.rotateCamera(move,0);
-		if(key == GLFW_KEY_X)
+
+*/			
+		if(key == GLFW_KEY_W){
+			cam.pos += cam.dir*move;
+		}
+		if(key == GLFW_KEY_S){
+			cam.pos -= cam.dir*move;
+		}
+		if(key == GLFW_KEY_A){
+//			cam.pos += cam.right*move;
 			cam.rotateCamera(-move,0);
+		}
+		if(key == GLFW_KEY_D){
+//			cam.pos -= cam.right*move;
+			cam.rotateCamera(move,0);
+		}
+
+
 
 }
 
@@ -275,9 +263,6 @@ void Update_Uniforms(){
 
 
 void Render_Object(Object *s){	//Renders an individual object.
-	glClearColor(0,0,0,0);
-	glClear(GL_COLOR_BUFFER_BIT);
-	glClear(GL_DEPTH_BUFFER_BIT);
 	glUseProgram(glstuff.prog);
 	glBindVertexArray(glstuff.vertexarray);
 	glUseProgram(glstuff.prog);
@@ -299,7 +284,7 @@ void Render_Object(Object *s){	//Renders an individual object.
 
 
 	//Update model-view uniform
-	glUniformMatrix4fv(glGetUniformLocation(glxstuff.prog, "modelviewMatrix"),
+	glUniformMatrix4fv(glGetUniformLocation(glstuff.prog, "modelviewMatrix"),
             1,
             false,
             &s->modelview[0][0]);
@@ -324,22 +309,18 @@ void Render_Object(Object *s){	//Renders an individual object.
 
 }
 	
-void Render(){
+void Render(Object objs[4]){
 	glClearColor(0,0,0,0);
 	glClear(GL_COLOR_BUFFER_BIT);
 	glClear(GL_DEPTH_BUFFER_BIT);
-	glUseProgram(glstuff.prog);
 
+	for(int i =0; i < 4; i++){
+		Render_Object(&objs[i]);
+	}
 
-	glBindVertexArray(glstuff.vertexarray);
-//	glActiveTexture(GL_TEXTURE0);
-//	glBindTexture(GL_TEXTURE_2D, glstuff.tex_output);
-//	glDrawElements(GL_TRIANGLE,
 	return;
 }
 int main(int argc, char * argv[]){
-
-
 
 	GLFWwindow * window = glfw_init(WIDTH,HEIGHT,"Scott Saunders - Assignment 5");	//Init window.
 
@@ -353,18 +334,34 @@ int main(int argc, char * argv[]){
 
 	Update_Perspective();	//updates perspective uniform, as it's never changed.
 
-	Object testsphere;
+	#define MOON bodies[3]
+	#define EARTH bodies[2]
+	#define SUN bodies[1]
+	#define SPACE bodies[0]
+	
+	#define SPHERE_QUAL 128	
 
-	generateSphere(&testsphere,1,1024,1024);
-	//generateTorus(&testsphere,0.5f,0.25f,100,20);
-//	generateTri(&testsphere);
+	cam.pos = glm::vec3(0,0,2);
+	Object bodies[4];
+	generateSphere(&EARTH,0.3,SPHERE_QUAL,SPHERE_QUAL);
+	loadTexture(&EARTH,"./textures/texture_earth_surface.jpg");
+	rotateObjPos(&EARTH,glm::vec3(-1,0,0),torad(90));
 
-	loadTexture(&testsphere,"./textures/texture_earth_surface.jpg");
+	generateSphere(&MOON,0.1,SPHERE_QUAL,SPHERE_QUAL);
+	loadTexture(&MOON,"./textures/texture_moon.jpg");
+	rotateObjPos(&MOON,glm::vec3(-1,0,0),torad(90));
 
-	printf("sizeof %d \n\n",testsphere.positions.size());
+	generateSphere(&SUN,1,SPHERE_QUAL,SPHERE_QUAL);
+	loadTexture(&SUN,"./textures/texture_sun.jpg");
+	rotateObjPos(&SUN,glm::vec3(-1,0,0),torad(90));
+
+	generateSphere(&SPACE,10,SPHERE_QUAL,SPHERE_QUAL);
+	loadTexture(&SPACE,"./textures/notquite_space.png");
+	rotateObjPos(&SPACE,glm::vec3(-1,0,0),torad(90));
+
 	while(!glfwWindowShouldClose(window))
 	{ //Main loop.
-		Render_Object(&testsphere);
+		Render(bodies);
     glfwSwapBuffers(window);
 		glfwPollEvents();
 
