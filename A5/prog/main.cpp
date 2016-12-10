@@ -347,7 +347,7 @@ int main(int argc, char * argv[]){
 
 	Object testsphere;
 
-	generateSphere(&testsphere,1,12,12);
+	generateSphere(&testsphere,1,1024,1024);
 	//generateTorus(&testsphere,0.5f,0.25f,100,20);
 //	generateTri(&testsphere);
 
