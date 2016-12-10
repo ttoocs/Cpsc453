@@ -365,7 +365,7 @@ int main(int argc, char * argv[]){
 	
 	#define mylog(X) log(X)/50.f //Note, this is from KM, to 0->10ish space.
 
-	#define tilttovec(X)	vec3(0,1,0)
+	#define tilttovec(X)	vec3(0,cos(X),0)
 
 	float sun_r		=	mylog(SUN_RADIUS);
 	float earth_r = mylog(EARTH_RADIUS);
@@ -398,9 +398,9 @@ int main(int argc, char * argv[]){
 		glfwPollEvents();
 
 		
-		rotateObjPos(&SUN,tilttovec(torad(SUN_TILT)),SUN_ROTATION*speed);
-		rotateObjPos(&EARTH,tilttovec(torad(EARTH_TILT)),EARTH_ROTATION*speed);
-		rotateObjPos(&MOON,tilttovec(torad(MOON_TILT)),MOON_ROTATION*speed);
+		rotateObjPos(&SUN,tilttovec(torad(SUN_DEG)),SUN_ROTATION*speed);
+		rotateObjPos(&EARTH,tilttovec(torad(EARTH_DEG)),EARTH_ROTATION*speed);
+		rotateObjPos(&MOON,tilttovec(torad(MOON_DEG)),MOON_ROTATION*speed);
 
 		rotateObj(&EARTH,vec3(0,1,0),EARTH_ORBIT*speed);
 		rotateObj(&MOON,vec3(0,1,0),MOON_ORBIT*speed);
