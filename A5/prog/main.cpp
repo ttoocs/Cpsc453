@@ -277,52 +277,6 @@ void Update_Uniforms(){
 	
 
 
-void Render_Object(Object *s){	//Renders an individual object.
-	glUseProgram(glstuff.prog);
-	glBindVertexArray(glstuff.vertexarray);
-	glUseProgram(glstuff.prog);
-	
-	Update_Uniforms();
-
-	//Copy data:
-		glBindBuffer(GL_ARRAY_BUFFER,glstuff.vertexbuffer);	//Setup data-copy (points)
-		glBufferData(GL_ARRAY_BUFFER,sizeof(vec3)*s->positions.size(),s->positions.data(),GL_DYNAMIC_DRAW);
-
-		glBindBuffer(GL_ARRAY_BUFFER,glstuff.normalbuffer);	//Setup data-copy (norms)
-		glBufferData(GL_ARRAY_BUFFER,sizeof(vec3)*s->normals.size(),s->normals.data(),GL_DYNAMIC_DRAW);
-
-		glBindBuffer(GL_ARRAY_BUFFER,glstuff.uvsbuffer);	//Setup data-copy (uvs)
-		glBufferData(GL_ARRAY_BUFFER,sizeof(vec2)*s->uvs.size(),s->uvs.data(),GL_DYNAMIC_DRAW);
-
-		glBindBuffer(GL_ARRAY_BUFFER,glstuff.indiciesbuffer);	//Setup data-copy	(indicies)
-		glBufferData(GL_ARRAY_BUFFER,sizeof(unsigned int)*s->indices.size(),s->indices.data(),GL_DYNAMIC_DRAW);
-
-
-	//Update model-view uniform
-	glUniformMatrix4fv(glGetUniformLocation(glstuff.prog, "modelviewMatrix"),
-            1,
-            false,
-            &s->modelview[0][0]);
-
-
-	//Setup texture: (IE, load them)
-	if(((*s).texture.data) != NULL){
-		if(s->texture.components==3)
-      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, s->texture.tWidth, s->texture.tHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, (const void *) s->texture.data);
-    else if(s->texture.components==4)
-      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, s->texture.tWidth, s->texture.tHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, (const void *) s->texture.data);
-
-	} 
-	//Actually draw.
-
-	glDrawElements(
-		GL_TRIANGLES,   //What shape we're drawing  - GL_TRIANGLES, GL_LINES, GL_POINTS, GL_QUADS, GL_TRIANGLE_STRIP
-		s->indices.size(),    //How many indices
-		GL_UNSIGNED_INT,  //Type
-		0
-	);
-
-}
 	
 void Render(Object objs[4]){
 	glClearColor(0,0,0,0);
@@ -330,8 +284,59 @@ void Render(Object objs[4]){
 	glClear(GL_DEPTH_BUFFER_BIT);
 
 	for(int i =0; i < 4; i++){
-		Render_Object(&objs[i]);
-	}
+		Object *s = &objs[i];
+
+		glUseProgram(glstuff.prog);
+		glBindVertexArray(glstuff.vertexarray);
+		glUseProgram(glstuff.prog);
+	
+		Update_Uniforms();
+
+		//Copy data:
+			glBindBuffer(GL_ARRAY_BUFFER,glstuff.vertexbuffer);	//Setup data-copy (points)
+			glBufferData(GL_ARRAY_BUFFER,sizeof(vec3)*s->positions.size(),s->positions.data(),GL_DYNAMIC_DRAW);
+
+			glBindBuffer(GL_ARRAY_BUFFER,glstuff.normalbuffer);	//Setup data-copy (norms)
+			glBufferData(GL_ARRAY_BUFFER,sizeof(vec3)*s->normals.size(),s->normals.data(),GL_DYNAMIC_DRAW);
+
+			glBindBuffer(GL_ARRAY_BUFFER,glstuff.uvsbuffer);	//Setup data-copy (uvs)
+			glBufferData(GL_ARRAY_BUFFER,sizeof(vec2)*s->uvs.size(),s->uvs.data(),GL_DYNAMIC_DRAW);
+
+			glBindBuffer(GL_ARRAY_BUFFER,glstuff.indiciesbuffer);	//Setup data-copy	(indicies)
+			glBufferData(GL_ARRAY_BUFFER,sizeof(unsigned int)*s->indices.size(),s->indices.data(),GL_DYNAMIC_DRAW);
+
+
+			//Update model-view uniform
+			mat4 modelview = &s ->modelview;
+			//TODO: Make it based off the thing it orbits. (Prior element in list)
+			//TODO: 
+			for(int j=i; j>0; j--){
+				modelview[3] += objs[j].modelview[3];
+			}
+	
+		glUniformMatrix4fv(glGetUniformLocation(glstuff.prog, "modelviewMatrix"),
+	            1,
+	            false,
+	            modelview[0][0]);
+
+
+		//Setup texture: (IE, load them)
+		if(((*s).texture.data) != NULL){
+			if(s->texture.components==3)
+	      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, s->texture.tWidth, s->texture.tHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, (const void *) s->texture.data);
+	    else if(s->texture.components==4)
+	      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, s->texture.tWidth, s->texture.tHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, (const void *) s->texture.data);
+	
+		} 
+		//Actually draw.
+	
+		glDrawElements(
+			GL_TRIANGLES,   //What shape we're drawing  - GL_TRIANGLES, GL_LINES, GL_POINTS, GL_QUADS, GL_TRIANGLE_STRIP
+			s->indices.size(),    //How many indices
+			GL_UNSIGNED_INT,  //Type
+			0
+		);
+		}
 
 	return;
 }
